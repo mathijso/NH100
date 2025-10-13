@@ -34,39 +34,44 @@
                 </template>
 
                 <template x-if="!loading && result">
-                    <div :class="`bg-${result.rideable ? 'green' : 'red'}-50 border border-${result.rideable ? 'green' : 'red'}-200 rounded-lg p-3`">
+                    <div :class="{
+                            'bg-green-50 border border-green-200 rounded-lg p-3': result.status === 'green',
+                            'bg-yellow-50 border border-yellow-200 rounded-lg p-3': result.status === 'amber',
+                            'bg-red-50 border border-red-200 rounded-lg p-3': !result.status || result.status === 'red'
+                        }">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <span class="text-2xl" x-text="result.rideable ? '✅' : '❌'"></span>
+                                <span class="text-2xl" x-text="result.status === 'green' ? '✅' : (result.status === 'amber' ? '🟧' : '❌')"></span>
                                 <div>
-                                    <h3 :class="`text-lg font-bold text-${result.rideable ? 'green' : 'red'}-900`"
-                                        x-text="result.rideable ? 'Route berijdbaar vandaag!' : 'Route niet geschikt vandaag'">
+                                    <h3 :class="{
+                                            'text-lg font-bold text-green-900': result.status === 'green',
+                                            'text-lg font-bold text-yellow-900': result.status === 'amber',
+                                            'text-lg font-bold text-red-900': !result.status || result.status === 'red'
+                                        }"
+                                        x-text="result.status === 'green' ? 'Route berijdbaar vandaag!' : (result.status === 'amber' ? 'Route mogelijk, afhankelijk van timing/snelheid' : 'Route niet geschikt vandaag')">
                                     </h3>
-                                    <p :class="`text-sm text-${result.rideable ? 'green' : 'red'}-700`" x-text="result.reason"></p>
+                                    <p :class="{
+                                            'text-sm text-green-700': result.status === 'green',
+                                            'text-sm text-yellow-700': result.status === 'amber',
+                                            'text-sm text-red-700': !result.status || result.status === 'red'
+                                        }" x-text="result.reason"></p>
                                 </div>
                             </div>
                             
-                            <!-- Getijden Info Compact - Alle 4 tijden chronologisch -->
-                            <template x-if="result.lowTides.length > 0 || result.highTides.length > 0">
-                                <div class="text-right text-xs">
-                                    <div class="space-y-1">
-                                        <!-- Eb getijden -->
-                                        <template x-if="result.lowTides.length > 0">
-                                            <template x-for="tide in result.lowTides" :key="tide.time">
-                                                <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
-                                                    <span x-text="`🌊 Eb: ${formatTime(tide.time)}`"></span>
-                                                </div>
-                                            </template>
-                                        </template>
-                                        <!-- Vloed getijden -->
-                                        <template x-if="result.highTides.length > 0">
-                                            <template x-for="tide in result.highTides" :key="tide.time">
-                                                <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
-                                                    <span x-text="`🌊 Vloed: ${formatTime(tide.time)}`"></span>
-                                                </div>
-                                            </template>
-                                        </template>
-                                    </div>
+                            <!-- Getijden Info Compact - Chronologisch gesorteerd -->
+                            <!-- Laat de getijden inline zien -->
+                            <template x-if="result.allTides && result.allTides.length > 0">
+                                <div class="text-xs">
+                                    <template x-for="(tide, i) in result.allTides" :key="tide.time">
+                                        <span :class="{
+                                                'text-green-700': result.status === 'green',
+                                                'text-yellow-700': result.status === 'amber',
+                                                'text-red-700': !result.status || result.status === 'red'
+                                            }">
+                                            <span x-text="` ${tide.tideType}: ${formatTime(tide.time)}`"></span>
+                                            <span x-show="i !== result.allTides.length - 1"> - </span>
+                                        </span>
+                                    </template>
                                 </div>
                             </template>
                         </div>
@@ -182,11 +187,20 @@
 
                         <!-- Calendar days -->
                         <template x-for="(day, index) in days" :key="index">
-                            <div :class="`${day.result.rideable ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'} border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow ${day.isToday ? 'ring-2 ring-indigo-500' : ''}`">
+                            <div :class="{
+                                    'bg-green-50 border-green-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day.result.status === 'green',
+                                    'bg-yellow-50 border-yellow-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day.result.status === 'amber',
+                                    'bg-red-50 border-red-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': !day.result.status || day.result.status === 'red',
+                                    'ring-2 ring-indigo-500': day.isToday
+                                }">
                                 <div class="flex justify-between items-start mb-1">
-                                    <div :class="`font-bold ${day.result.rideable ? 'text-green-900' : 'text-red-900'} text-sm md:text-base`" 
+                                    <div :class="{
+                                            'font-bold text-green-900 text-sm md:text-base': day.result.status === 'green',
+                                            'font-bold text-yellow-900 text-sm md:text-base': day.result.status === 'amber',
+                                            'font-bold text-red-900 text-sm md:text-base': !day.result.status || day.result.status === 'red'
+                                        }" 
                                          x-text="day.date.getDate()"></div>
-                                    <span class="text-lg" x-text="day.result.rideable ? '✅' : '❌'"></span>
+                                    <span class="text-lg" x-text="day.result.status === 'green' ? '✅' : (day.result.status === 'amber' ? '🟧' : '❌')"></span>
                                 </div>
                                 <template x-if="day.isToday">
                                     <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
@@ -195,17 +209,15 @@
                                     <div class="text-xs bg-gray-500 text-white px-1 py-0.5 rounded mb-1 text-center" 
                                          x-text="`+${day.daysFromToday}d`"></div>
                                 </template>
-                                <div :class="`text-xs ${day.result.rideable ? 'text-green-600' : 'text-red-600'} space-y-0.5`">
-                                    <!-- Eb getijden -->
-                                    <template x-if="day.result.lowTides.length > 0">
-                                        <template x-for="tide in day.result.lowTides" :key="tide.time">
-                                            <div class="font-semibold" x-text="`Eb: ${formatTime(tide.time)}`"></div>
-                                        </template>
-                                    </template>
-                                    <!-- Vloed getijden -->
-                                    <template x-if="day.result.highTides.length > 0">
-                                        <template x-for="tide in day.result.highTides" :key="tide.time">
-                                            <div x-text="`Vloed: ${formatTime(tide.time)}`"></div>
+                                <div :class="{
+                                        'text-xs text-green-600 space-y-0.5': day.result.status === 'green',
+                                        'text-xs text-yellow-600 space-y-0.5': day.result.status === 'amber',
+                                        'text-xs text-red-600 space-y-0.5': !day.result.status || day.result.status === 'red'
+                                    }">
+                                    <!-- Alle getijden chronologisch -->
+                                    <template x-if="day.result.allTides && day.result.allTides.length > 0">
+                                        <template x-for="tide in day.result.allTides" :key="tide.time">
+                                            <div :class="tide.tideType === 'Eb' ? 'font-semibold' : ''" x-text="`${tide.tideType}: ${formatTime(tide.time)}`"></div>
                                         </template>
                                     </template>
                                 </div>
@@ -294,7 +306,7 @@
                 days: [],
                 firstDayOfWeek: 0,
                 currentDate: new Date(),
-                maxDays: 90,
+                maxDays: 450, // ~15 maanden vooruit om alle beschikbare CSV data te tonen
                 
                 get currentMonthYear() {
                     const monthNames = [

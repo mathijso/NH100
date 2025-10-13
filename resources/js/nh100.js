@@ -65,46 +65,94 @@ export function isRouteRideable(date, tides) {
     const winterSeason = isWinterSeason(date);
     const { lowTides, highTides } = getTidesForDay(date, tides);
 
+    // Combineer en sorteer alle getijden chronologisch
+    const allTides = [
+        ...lowTides.map(t => ({ ...t, tideType: 'Eb' })),
+        ...highTides.map(t => ({ ...t, tideType: 'Vloed' }))
+    ].sort((a, b) => a.time - b.time);
+
     if (!winterSeason) {
         // Zomer: alleen voor 10:00 toegankelijk, maar we rijden 10:00-12:00
         return {
             rideable: false,
+            status: 'red',
             reason: 'Strand alleen voor 10:00 toegankelijk (buiten winterseizoen)',
             lowTides: lowTides,
-            highTides: highTides
+            highTides: highTides,
+            allTides: allTides
         };
     }
 
-    // Check 2: Getijden check
-    for (let lowTide of lowTides) {
-        const tideHour = lowTide.time.getHours() + lowTide.time.getMinutes() / 60;
+    // Check 2: Getijden-overlap met venster (10:00-12:00)
+    const windowStart = new Date(date);
+    windowStart.setHours(10, 0, 0, 0);
+    const windowEnd = new Date(date);
+    windowEnd.setHours(12, 0, 0, 0);
 
-        // Eb moet tussen 8:00 en 14:00 zijn
-        if (tideHour >= 8 && tideHour <= 14) {
-            return {
-                rideable: true,
-                reason: `Eb om ${formatTime(lowTide.time)} - ideaal voor strandgedeelte`,
-                lowTides: lowTides,
-                highTides: highTides
-            };
+    // Bepaal overlap met eb-venster (2 uur voor/na eb)
+    let bestOverlapMinutes = 0;
+    let bestLowTide = null;
+
+    for (let lowTide of lowTides) {
+        const ebStart = new Date(lowTide.time);
+        ebStart.setHours(ebStart.getHours() - 2);
+        const ebEnd = new Date(lowTide.time);
+        ebEnd.setHours(ebEnd.getHours() + 2);
+
+        const overlapStart = new Date(Math.max(windowStart, ebStart));
+        const overlapEnd = new Date(Math.min(windowEnd, ebEnd));
+        const overlapMinutes = Math.max(0, (overlapEnd - overlapStart) / (1000 * 60));
+
+        if (overlapMinutes > bestOverlapMinutes) {
+            bestOverlapMinutes = overlapMinutes;
+            bestLowTide = lowTide;
         }
     }
 
-    // Als we hier komen, is er geen geschikte eb
+    // Bepaal status op basis van overlap
+    // - groen: volledige 120 minuten overlap
+    // - amber: tenminste 20 minuten maar minder dan 120 minuten
+    // - rood: minder dan 20 minuten of geen data
+    if (bestOverlapMinutes >= 120) {
+        return {
+            rideable: true,
+            status: 'green',
+            reason: `Volledig venster binnen eb. Eb om ${formatTime(bestLowTide.time)}.`,
+            lowTides: lowTides,
+            highTides: highTides,
+            allTides: allTides
+        };
+    }
+
+    if (bestOverlapMinutes >= 20) {
+        return {
+            rideable: false,
+            status: 'amber',
+            reason: `Gedeeltelijke overlap (${Math.round(bestOverlapMinutes)} min). Eb om ${formatTime(bestLowTide.time)}.`,
+            lowTides: lowTides,
+            highTides: highTides,
+            allTides: allTides
+        };
+    }
+
     if (lowTides.length > 0) {
         return {
             rideable: false,
-            reason: `Eb om ${formatTime(lowTides[0].time)} - niet geschikt voor strandgedeelte`,
+            status: 'red',
+            reason: `Eb om ${formatTime(lowTides[0].time)} - venster valt buiten eb-periode`,
             lowTides: lowTides,
-            highTides: highTides
+            highTides: highTides,
+            allTides: allTides
         };
     }
 
     return {
         rideable: false,
+        status: 'red',
         reason: 'Geen getijdendata beschikbaar',
         lowTides: [],
-        highTides: []
+        highTides: [],
+        allTides: []
     };
 }
 

@@ -95,19 +95,6 @@ class TideDataService
         return array_values($filteredTides);
     }
 
-    /**
-     * Get tide data for the next X days
-     * 
-     * @param int $days
-     * @return array
-     */
-    public function getTidesForNextDays(int $days = 90): array
-    {
-        $startDate = Carbon::now();
-        $endDate = Carbon::now()->addDays($days);
-        
-        return $this->getTidesForDateRange($startDate, $endDate);
-    }
 
     /**
      * Parse CSV file and return tide data
