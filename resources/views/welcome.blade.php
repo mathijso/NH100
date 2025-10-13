@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="nl">
 
-<head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NH100 Route Planner</title>
@@ -11,6 +11,8 @@
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    @livewire('tide-data')
+    
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
         <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6 animate-fadeIn">
@@ -22,6 +24,53 @@
                 over het strand en door de bossen van Schoorl en Bergen. Deze planner helpt je bepalen
                 wanneer de route berijdbaar is op basis van getijden en seizoensrestricties.
             </p>
+
+            <!-- Vandaag Status -->
+            <div x-data="todayStatus" class="mt-4 mb-4">
+                <template x-if="loading">
+                    <div class="flex items-center justify-center py-2">
+                        <div class="animate-pulse text-gray-400 text-sm">Gegevens laden...</div>
+                    </div>
+                </template>
+
+                <template x-if="!loading && result">
+                    <div :class="`bg-${result.rideable ? 'green' : 'red'}-50 border border-${result.rideable ? 'green' : 'red'}-200 rounded-lg p-3`">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl" x-text="result.rideable ? '✅' : '❌'"></span>
+                                <div>
+                                    <h3 :class="`text-lg font-bold text-${result.rideable ? 'green' : 'red'}-900`"
+                                        x-text="result.rideable ? 'Route berijdbaar vandaag!' : 'Route niet geschikt vandaag'">
+                                    </h3>
+                                    <p :class="`text-sm text-${result.rideable ? 'green' : 'red'}-700`" x-text="result.reason"></p>
+                                </div>
+                            </div>
+                            
+                            <!-- Getijden Info Compact -->
+                            <template x-if="result.lowTides.length > 0 || result.highTides.length > 0">
+                                <div class="text-right text-sm">
+                                    <template x-if="result.lowTides.length > 0">
+                                        <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
+                                            <span class="font-semibold">🌊 Eb:</span>
+                                            <template x-for="tide in result.lowTides" :key="tide.time">
+                                                <span x-text="` ${formatTime(tide.time)}`"></span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="result.highTides.length > 0">
+                                        <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
+                                            <span class="font-semibold">🌊 Vloed:</span>
+                                            <template x-for="tide in result.highTides" :key="tide.time">
+                                                <span x-text="` ${formatTime(tide.time)}`"></span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
 
             <!-- Route Info met Afbeelding en Links -->
             <div class="mt-6 grid md:grid-cols-2 gap-6">
@@ -74,73 +123,10 @@
                             <li>• Strandgedeelte alleen bij laagwater goed te fietsen</li>
                             <li>• Duinkaart verplicht (<a href="https://www.pwn.nl/duinkaartkopen#" target="_blank"
                                     class="text-blue-500 underline">€2,00 per dag</a>)</li>
-                        </ul>
+                    </ul>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Vandaag Status -->
-        <div x-data="todayStatus" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6 animate-fadeIn">
-            <h2 class="text-2xl font-bold text-indigo-900 mb-4">Vandaag</h2>
-            
-            <template x-if="loading">
-                <div class="flex items-center justify-center py-8">
-                    <div class="animate-pulse text-gray-400">Gegevens laden...</div>
-                </div>
-            </template>
-
-            <template x-if="!loading && result">
-                <div>
-                    <div :class="`bg-${result.rideable ? 'green' : 'red'}-50 border-2 border-${result.rideable ? 'green' : 'red'}-200 rounded-xl p-6`">
-                        <div class="flex items-center justify-center mb-4">
-                            <span class="text-6xl" x-text="result.rideable ? '✅' : '❌'"></span>
-                        </div>
-                        <h3 :class="`text-2xl font-bold text-${result.rideable ? 'green' : 'red'}-900 text-center mb-2`"
-                            x-text="result.rideable ? 'Route kan gereden worden!' : 'Route niet geschikt vandaag'">
-                        </h3>
-                        <p :class="`text-${result.rideable ? 'green' : 'red'}-700 text-center`" x-text="result.reason"></p>
-                        
-                        <!-- Getijden Info -->
-                        <template x-if="result.lowTides.length > 0 || result.highTides.length > 0">
-                            <div :class="`mt-4 pt-4 border-t border-${result.rideable ? 'green' : 'red'}-200 space-y-2`">
-                                <template x-if="result.lowTides.length > 0">
-                                    <div>
-                                        <p :class="`text-sm font-semibold text-${result.rideable ? 'green' : 'red'}-700 mb-1`">🌊 Eb:</p>
-                                        <template x-for="tide in result.lowTides" :key="tide.time">
-                                            <p :class="`text-sm text-${result.rideable ? 'green' : 'red'}-600 ml-4`" 
-                                               x-text="`• ${formatTime(tide.time)} (${tide.height.toFixed(2)}m)`"></p>
-                                        </template>
-                                    </div>
-                                </template>
-                                
-                                <template x-if="result.highTides.length > 0">
-                                    <div>
-                                        <p :class="`text-sm font-semibold text-${result.rideable ? 'green' : 'red'}-700 mb-1`">🌊 Vloed:</p>
-                                        <template x-for="tide in result.highTides" :key="tide.time">
-                                            <p :class="`text-sm text-${result.rideable ? 'green' : 'red'}-600 ml-4`" 
-                                               x-text="`• ${formatTime(tide.time)} (${tide.height.toFixed(2)}m)`"></p>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Aanbevolen tijdschema -->
-                    <template x-if="result.rideable">
-                        <div class="mt-4 bg-blue-50 rounded-lg p-4">
-                            <h4 class="font-semibold text-blue-900 mb-2">⏰ Aanbevolen tijdschema:</h4>
-                            <ul class="text-sm text-blue-700 space-y-1">
-                                <li>• 07:00 - Start in duinreservaat</li>
-                                <li>• 10:30 - Vertrek uit duinreservaat</li>
-                                <li>• 10:30-12:00 - Strandgedeelte (optimale eb)</li>
-                                <li>• 12:00+ - MTB parcours Schoorl en Bergen</li>
-                            </ul>
-                        </div>
-                    </template>
-                </div>
-            </template>
         </div>
 
         <!-- Kalender View -->
@@ -158,7 +144,7 @@
                     <!-- Weekdag headers -->
                     <div class="grid grid-cols-7 gap-1 mb-2">
                         <template x-for="day in ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']" :key="day">
-                            <div class="font-semibold text-center p-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm md:text-base" 
+                            <div class="font-semibold text-center p-2 bg-gray-50 border-1 border-gray-200 text-dark rounded-lg text-sm md:text-base" 
                                  x-text="day"></div>
                         </template>
                     </div>
@@ -179,7 +165,7 @@
                                     <span class="text-lg" x-text="day.result.rideable ? '✅' : '❌'"></span>
                                 </div>
                                 <template x-if="index === 0">
-                                    <div class="text-xs bg-indigo-500 text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
+                                    <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
                                 </template>
                                 <div :class="`text-xs ${day.result.rideable ? 'text-green-600' : 'text-red-600'} space-y-0.5`">
                                     <template x-if="day.result.lowTides.length > 0">
@@ -198,10 +184,11 @@
 
         <footer>
         <div class="mt-8 text-center text-gray-500 text-sm">
-            
-            <p class="mt-2">⚠️ Controleer altijd de actuele omstandigheden voor je vertrekt - Getijdendata voor Egmond aan Zee</p>
+            <p>Getijdendata voor Egmond aan Zee</p>
+            <p class="text-xs mt-1">Meetstation Petten Zuid (52°46'21.6"N 4°38'58.9"E) - 18km noordelijk</p>
+            <p class="mt-2">⚠️ Controleer altijd de actuele omstandigheden voor je vertrekt</p>
         </div>
-        
+
         <div class="mt-8 text-center text-gray-500 text-sm">
             <p>© 2025 NH100 Route Planner. Ontwikkeld door <a href="https://oggel-codelabs.nl" target="_blank" class="text-blue-500">Oggel Codelabs</a></p>
         </div>
@@ -219,7 +206,48 @@
                 result: null,
                 
                 async init() {
-                    const tides = await window.NH100.fetchTideData();
+                    // Wait for tides data from Livewire
+                    await this.loadTides();
+                    
+                    // Listen for tide updates
+                    window.addEventListener('tides-updated', (event) => {
+                        this.calculateToday(event.detail.tides);
+                    });
+                },
+                
+                async loadTides() {
+                    // Check if data is already available
+                    if (window.tidesData && window.tidesData.length > 0) {
+                        console.log('Tides already available:', window.tidesData.length);
+                        this.calculateToday(window.tidesData);
+                        return;
+                    }
+                    
+                    // Wait a bit for Livewire to load
+                    const maxAttempts = 30;
+                    let attempts = 0;
+                    
+                    while ((!window.tidesData || window.tidesData.length === 0) && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                        
+                        if (attempts % 10 === 0) {
+                            console.log('Waiting for tides...', attempts);
+                        }
+                    }
+                    
+                    if (window.tidesData && window.tidesData.length > 0) {
+                        console.log('Tides loaded after waiting:', window.tidesData.length);
+                        this.calculateToday(window.tidesData);
+                    } else {
+                        console.log('Falling back to simulated data');
+                        // Fallback to simulated data
+                        const tides = window.NH100.generateSimulatedTides();
+                        this.calculateToday(tides);
+                    }
+                },
+                
+                calculateToday(tides) {
                     const today = new Date();
                     this.result = window.NH100.isRouteRideable(today, tides);
                     this.loading = false;
@@ -237,11 +265,49 @@
                 firstDayOfWeek: 0,
                 
                 async init() {
-                    const tides = await window.NH100.fetchTideData();
+                    // Wait for tides data from Livewire
+                    await this.loadTides();
+                    
+                    // Listen for tide updates
+                    window.addEventListener('tides-updated', (event) => {
+                        this.calculateDays(event.detail.tides);
+                    });
+                },
+                
+                async loadTides() {
+                    // Check if data is already available
+                    if (window.tidesData && window.tidesData.length > 0) {
+                        console.log('Calendar: Tides already available:', window.tidesData.length);
+                        this.calculateDays(window.tidesData);
+                        return;
+                    }
+                    
+                    // Wait a bit for Livewire to load
+                    const maxAttempts = 30;
+                    let attempts = 0;
+                    
+                    while ((!window.tidesData || window.tidesData.length === 0) && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    
+                    if (window.tidesData && window.tidesData.length > 0) {
+                        console.log('Calendar: Tides loaded after waiting:', window.tidesData.length);
+                        this.calculateDays(window.tidesData);
+                    } else {
+                        console.log('Calendar: Falling back to simulated data');
+                        // Fallback to simulated data
+                        const tides = window.NH100.generateSimulatedTides();
+                        this.calculateDays(tides);
+                    }
+                },
+                
+                calculateDays(tides) {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     
                     this.firstDayOfWeek = today.getDay();
+                    this.days = [];
                     
                     for (let i = 0; i < 30; i++) {
                         const date = new Date(today);
@@ -281,6 +347,6 @@
             animation: fadeIn 0.5s ease-out;
         }
     </style>
-</body>
+    </body>
 
 </html>
