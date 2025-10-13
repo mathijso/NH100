@@ -35,10 +35,4 @@ return [
         ],
     ],
 
-    'marea' => [
-        'enabled' => env('MAREA_API_ENABLED', false),
-        'api_key' => env('MAREA_API_KEY'),
-        'station_id' => env('MAREA_STATION_ID', 'GESLA3:eb1c86d10b'), // Petten Zuid
-    ],
-
 ];

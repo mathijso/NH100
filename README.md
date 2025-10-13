@@ -51,8 +51,27 @@ Vrij te gebruiken voor persoonlijk gebruik.
 Verbeteringen en suggesties zijn welkom!
 
 
+## Data Bronnen
+
+De applicatie gebruikt getijdendata van Rijkswaterstaat in CSV formaat:
+- Data bestanden bevinden zich in `public/data/`
+- Formaat: `YYYY.csv` (bijv. `2025.csv`, `2026.csv`)
+- De applicatie ondersteunt automatisch meerdere jaren
+
+### CSV Formaat
+```
+Datum;Nederlandsetijd;Hoogwater/laagwater;Waarde
+30/12/2025;19:28;LW;-67 cm
+30/12/2025;11:36;HW;84 cm
+```
+
+### Nieuw jaar toevoegen
+1. Plaats nieuw CSV bestand in `public/data/` met naam `YYYY.csv`
+2. De applicatie herkent automatisch nieuwe jaren
+3. Geen code aanpassingen nodig
+
 ## Todo
-- [ ] gebruik gevalideerde JSON data hardcoded om betrouwbaar en snel data te krijgen
+- [x] Gebruik Rijkswaterstaat CSV data voor betrouwbare getijden informatie
 - [ ] Weer voorspelling integratie
 - [ ] Wind data (belangrijk voor strand)
 - [ ] GPS track export

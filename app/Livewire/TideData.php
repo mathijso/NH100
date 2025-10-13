@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Services\MareaApiService;
+use App\Services\TideDataService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
 
@@ -11,14 +11,13 @@ class TideData extends Component
     public $tides = [];
     public $loading = true;
     public $error = null;
-    public $source = 'simulated';
-    public $useRealApi = true;
+    public $source = 'Rijkswaterstaat CSV';
+    public $availableYears = [];
     
-    protected $mareaService;
+    protected $tideService;
 
     public function mount()
     {
-        $this->useRealApi = config('services.marea.enabled', false);
         $this->loadTideData();
     }
 
@@ -28,19 +27,15 @@ class TideData extends Component
         $this->error = null;
 
         try {
-            if ($this->useRealApi) {
-                $this->loadRealTideData();
-            } else {
-                $this->loadSimulatedTideData();
-            }
+            $this->loadCsvTideData();
         } catch (\Exception $e) {
             Log::error('Error loading tide data', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            $this->error = 'Kon getijdendata niet laden. Gebruik gesimuleerde data.';
-            $this->loadSimulatedTideData();
+            $this->error = 'Kon getijdendata niet laden uit CSV bestanden.';
+            $this->tides = [];
         }
 
         $this->loading = false;
@@ -52,82 +47,25 @@ class TideData extends Component
         ]);
     }
 
-    private function loadRealTideData()
+    private function loadCsvTideData()
     {
-        $mareaService = app(MareaApiService::class);
-        $data = $mareaService->getEgmondTides(35);
-
-        if ($data && !empty($data['tides'])) {
-            $this->tides = $data['tides'];
-            $this->source = $data['source'];
+        $tideService = app(TideDataService::class);
+        
+        // Get all available tide data
+        $allTides = $tideService->getAllTides();
+        
+        if (!empty($allTides)) {
+            $this->tides = $allTides;
+            $this->availableYears = $tideService->getAvailableYears();
+            $this->source = 'Rijkswaterstaat CSV';
             
-            Log::info('Loaded real tide data', [
+            Log::info('Loaded CSV tide data', [
                 'count' => count($this->tides),
-                'source' => $this->source,
+                'years' => $this->availableYears,
             ]);
         } else {
-            throw new \Exception('No tide data received from API');
+            throw new \Exception('No tide data found in CSV files');
         }
-    }
-
-    private function loadSimulatedTideData()
-    {
-        $this->tides = $this->generateSimulatedTides();
-        $this->source = 'simulated';
-        
-        Log::info('Loaded simulated tide data', [
-            'count' => count($this->tides),
-        ]);
-    }
-
-    private function generateSimulatedTides(): array
-    {
-        $tides = [];
-        $now = now()->startOfDay();
-
-        for ($day = 0; $day < 35; $day++) {
-            $currentDate = $now->copy()->addDays($day);
-            $timeShift = $day * 50; // minuten shift per dag
-
-            // Eerste eb
-            $tide1 = $currentDate->copy()->addHours(6)->addMinutes($timeShift % 60);
-            $tides[] = [
-                'time' => $tide1->toIso8601String(),
-                'type' => 'Low',
-                'height' => 0.3 + (rand(0, 20) / 100),
-            ];
-
-            // Tweede eb (ongeveer 12.5 uur later)
-            $tide2 = $currentDate->copy()->addHours(18)->addMinutes(30 + ($timeShift % 60));
-            $tides[] = [
-                'time' => $tide2->toIso8601String(),
-                'type' => 'Low',
-                'height' => 0.3 + (rand(0, 20) / 100),
-            ];
-
-            // Eerste hoog water
-            $high1 = $currentDate->copy()->addHours(0)->addMinutes($timeShift % 60);
-            $tides[] = [
-                'time' => $high1->toIso8601String(),
-                'type' => 'High',
-                'height' => 1.8 + (rand(0, 40) / 100),
-            ];
-
-            // Tweede hoog water
-            $high2 = $currentDate->copy()->addHours(12)->addMinutes(30 + ($timeShift % 60));
-            $tides[] = [
-                'time' => $high2->toIso8601String(),
-                'type' => 'High',
-                'height' => 1.8 + (rand(0, 40) / 100),
-            ];
-        }
-
-        // Sort by time
-        usort($tides, function ($a, $b) {
-            return strtotime($a['time']) - strtotime($b['time']);
-        });
-
-        return $tides;
     }
 
     public function refresh()
