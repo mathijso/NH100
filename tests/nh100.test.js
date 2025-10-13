@@ -75,6 +75,66 @@ function run() {
         assert(res.status === 'red', 'Expected red for no/low overlap');
     }
 
+    // 4) Green - eb between 09:00 and 12:00
+    {
+        const date = new Date(2025, 9, 20);
+        const tides = buildTidesForTest(
+            buildDayTides('2025-10-20', [
+                ['Vloed', '01:40'],
+                ['Eb', '10:00'],
+                ['Vloed', '13:58'],
+                ['Eb', '21:38'],
+            ])
+        );
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'green', 'Expected green when Eb is between 09:00–12:00');
+    }
+
+    // 5) Amber/Red near recent Vloed before 10:00
+    {
+        const date = new Date(2025, 9, 11); // example like user: Vloed 07:09
+        const tides = buildTidesForTest(
+            buildDayTides('2025-10-11', [
+                ['Eb', '02:36'],
+                ['Vloed', '07:09'],
+                ['Eb', '14:59'],
+                ['Vloed', '19:26']
+            ])
+        );
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'amber' || res.status === 'red', 'Expected amber/red when recent Vloed before window');
+    }
+
+    // 6) Red when very recent Vloed (e.g., ~08:50 → <2h before 10:00)
+    {
+        const date = new Date(2025, 9, 13); // similar pattern user says should be not good
+        const tides = buildTidesForTest(
+            buildDayTides('2025-10-13', [
+                ['Eb', '04:15'],
+                ['Vloed', '08:51'],
+                ['Eb', '16:38'],
+                ['Vloed', '21:08']
+            ])
+        );
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'red', 'Expected red when vloed <2h before 10:00');
+    }
+
+    // 7) Likely red when pattern similar to Oct 12 (Vloed ~07:56, Eb 15:47)
+    {
+        const date = new Date(2025, 9, 12);
+        const tides = buildTidesForTest(
+            buildDayTides('2025-10-12', [
+                ['Eb', '03:22'],
+                ['Vloed', '07:56'],
+                ['Eb', '15:47'],
+                ['Vloed', '20:12']
+            ])
+        );
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'red' || res.status === 'amber', 'Expected not green for Oct 12 pattern');
+    }
+
     console.log('✅ nh100 logic tests passed');
 }
 

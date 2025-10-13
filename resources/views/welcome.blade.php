@@ -180,7 +180,7 @@
 
                     <!-- Kalender grid -->
                     <div class="grid grid-cols-7 gap-1">
-                        <!-- Empty cells for days before today -->
+                        <!-- Empty cells for days before eerste dag van de maand -->
                         <template x-for="i in firstDayOfWeek" :key="`empty-${i}`">
                             <div class="bg-gray-100 rounded-lg p-2 min-h-24"></div>
                         </template>
@@ -205,9 +205,9 @@
                                 <template x-if="day.isToday">
                                     <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
                                 </template>
-                                <template x-if="!day.isToday && day.daysFromToday > 0">
-                                    <div class="text-xs bg-gray-500 text-white px-1 py-0.5 rounded mb-1 text-center" 
-                                         x-text="`+${day.daysFromToday}d`"></div>
+                                <!-- Toon reden bij rode dagen in plaats van +d/-d badge -->
+                                <template x-if="day.result && (day.result.status === 'red' || !day.result.status) && day.result.reason">
+                                    <div class="text-[11px] bg-red-100 text-red-800 px-1 py-0.5 rounded mb-1 text-center truncate" x-text="day.result.reason"></div>
                                 </template>
                                 <div :class="{
                                         'text-xs text-green-600 space-y-0.5': day.result.status === 'green',
@@ -380,23 +380,20 @@
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     
-                    // Start from current date or selected month (first day of month)
+                    // Start from geselecteerde maand (eerste dag van de maand) zodat ook verleden zichtbaar is
                     const firstDayOfMonth = new Date(this.currentDate);
                     firstDayOfMonth.setDate(1);
                     
-                    // Determine actual start date (today or first day of month, whichever is later)
-                    const actualStartDate = new Date(Math.max(today, firstDayOfMonth));
-                    
-                    // Calculate first day of week for the actual start date (Monday = 0, Sunday = 6)
-                    const dayOfWeek = actualStartDate.getDay();
+                    // Bepaal eerste weekdag voor de eerste dag van de maand (maandag = 0, zondag = 6)
+                    const dayOfWeek = firstDayOfMonth.getDay();
                     this.firstDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                     this.days = [];
                     
                     // Calculate last day of the month
                     const lastDayOfMonth = new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() + 1, 0);
                     
-                    // Loop through all days from actual start date to end of month
-                    let currentDate = new Date(actualStartDate);
+                    // Loop door alle dagen van de maand, inclusief verleden
+                    let currentDate = new Date(firstDayOfMonth);
                     while (currentDate <= lastDayOfMonth) {
                         const daysFromToday = Math.floor((currentDate - today) / (1000 * 60 * 60 * 24));
                         
