@@ -83,9 +83,55 @@ export function isRouteRideable(date, tides) {
         };
     }
 
-    // Check 2: Getijden-overlap met venster (10:00-12:00)
+    // Voorrangsregels gebruiker (aangescherpt):
+    // 1) Groen als Eb valt tussen 09:00 en 12:00
+    const nine = new Date(date);
+    nine.setHours(9, 0, 0, 0);
+    const twelve = new Date(date);
+    twelve.setHours(12, 0, 0, 0);
+
+    const ebInMorningWindow = lowTides.find(t => t.time >= nine && t.time <= twelve);
+    if (ebInMorningWindow) {
+        return {
+            rideable: true,
+            status: 'green',
+            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 09:00–12:00)`,
+            lowTides: lowTides,
+            highTides: highTides,
+            allTides: allTides
+        };
+    }
+
+    // 2) Aangescherpt: beoordeel nabijheid van laatste vloed vóór 10:00
     const windowStart = new Date(date);
     windowStart.setHours(10, 0, 0, 0);
+    const highsBeforeWindow = highTides.filter(t => t.time <= windowStart).sort((a, b) => a.time - b.time);
+    const lastHighBeforeWindow = highsBeforeWindow.length > 0 ? highsBeforeWindow[highsBeforeWindow.length - 1] : null;
+    if (lastHighBeforeWindow) {
+        const hoursSinceHigh = (windowStart - lastHighBeforeWindow.time) / (1000 * 60 * 60);
+        if (hoursSinceHigh < 2) {
+            return {
+                rideable: false,
+                status: 'red',
+                reason: `Te dicht op vloed (${formatTime(lastHighBeforeWindow.time)}), minder dan 2 uur`,
+                lowTides: lowTides,
+                highTides: highTides,
+                allTides: allTides
+            };
+        }
+        if (hoursSinceHigh < 3) {
+            return {
+                rideable: false,
+                status: 'amber',
+                reason: `Recent vloed (${formatTime(lastHighBeforeWindow.time)}), ~${Math.round(hoursSinceHigh * 60)} min geleden`,
+                lowTides: lowTides,
+                highTides: highTides,
+                allTides: allTides
+            };
+        }
+    }
+
+    // Check 3 (fallback): Getijden-overlap met venster (10:00-12:00)
     const windowEnd = new Date(date);
     windowEnd.setHours(12, 0, 0, 0);
 
@@ -109,7 +155,7 @@ export function isRouteRideable(date, tides) {
         }
     }
 
-    // Bepaal status op basis van overlap
+    // Bepaal status op basis van overlap (fallback regels)
     // - groen: volledige 120 minuten overlap
     // - amber: tenminste 20 minuten maar minder dan 120 minuten
     // - rood: minder dan 20 minuten of geen data
