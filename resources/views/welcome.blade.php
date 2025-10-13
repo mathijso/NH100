@@ -368,34 +368,40 @@
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     
-                    // Start from current date or selected month
-                    const startDate = new Date(this.currentDate);
-                    startDate.setDate(1); // First day of the month
+                    // Start from current date or selected month (first day of month)
+                    const firstDayOfMonth = new Date(this.currentDate);
+                    firstDayOfMonth.setDate(1);
                     
-                    // Calculate first day of week for the month (Monday = 0, Sunday = 6)
-                    const dayOfWeek = startDate.getDay();
+                    // Determine actual start date (today or first day of month, whichever is later)
+                    const actualStartDate = new Date(Math.max(today, firstDayOfMonth));
+                    
+                    // Calculate first day of week for the actual start date (Monday = 0, Sunday = 6)
+                    const dayOfWeek = actualStartDate.getDay();
                     this.firstDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                     this.days = [];
                     
-                    // Calculate days in the month
-                    const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+                    // Calculate last day of the month
+                    const lastDayOfMonth = new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth() + 1, 0);
                     
-                    for (let i = 0; i < daysInMonth; i++) {
-                        const date = new Date(startDate);
-                        date.setDate(startDate.getDate() + i);
+                    // Loop through all days from actual start date to end of month
+                    let currentDate = new Date(actualStartDate);
+                    while (currentDate <= lastDayOfMonth) {
+                        const daysFromToday = Math.floor((currentDate - today) / (1000 * 60 * 60 * 24));
                         
-                        // Only show future dates and limit to maxDays
-                        const daysFromToday = Math.floor((date - today) / (1000 * 60 * 60 * 24));
-                        if (daysFromToday >= 0 && daysFromToday <= this.maxDays) {
-                            const result = window.NH100.isRouteRideable(date, tides);
+                        // Only add if within maxDays limit
+                        if (daysFromToday <= this.maxDays) {
+                            const result = window.NH100.isRouteRideable(currentDate, tides);
                             
                             this.days.push({
-                                date: date,
+                                date: new Date(currentDate),
                                 result: result,
                                 isToday: daysFromToday === 0,
                                 daysFromToday: daysFromToday
                             });
                         }
+                        
+                        // Move to next day
+                        currentDate.setDate(currentDate.getDate() + 1);
                     }
                     
                     this.loading = false;
