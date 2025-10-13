@@ -46,25 +46,27 @@
                                 </div>
                             </div>
                             
-                            <!-- Getijden Info Compact -->
+                            <!-- Getijden Info Compact - Alle 4 tijden chronologisch -->
                             <template x-if="result.lowTides.length > 0 || result.highTides.length > 0">
-                                <div class="text-right text-sm">
-                                    <template x-if="result.lowTides.length > 0">
-                                        <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
-                                            <span class="font-semibold">🌊 Eb:</span>
+                                <div class="text-right text-xs">
+                                    <div class="space-y-1">
+                                        <!-- Eb getijden -->
+                                        <template x-if="result.lowTides.length > 0">
                                             <template x-for="tide in result.lowTides" :key="tide.time">
-                                                <span x-text="` ${formatTime(tide.time)}`"></span>
+                                                <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
+                                                    <span x-text="`🌊 Eb: ${formatTime(tide.time)}`"></span>
+                                                </div>
                                             </template>
-                                        </div>
-                                    </template>
-                                    <template x-if="result.highTides.length > 0">
-                                        <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
-                                            <span class="font-semibold">🌊 Vloed:</span>
+                                        </template>
+                                        <!-- Vloed getijden -->
+                                        <template x-if="result.highTides.length > 0">
                                             <template x-for="tide in result.highTides" :key="tide.time">
-                                                <span x-text="` ${formatTime(tide.time)}`"></span>
+                                                <div :class="`text-${result.rideable ? 'green' : 'red'}-700`">
+                                                    <span x-text="`🌊 Vloed: ${formatTime(tide.time)}`"></span>
+                                                </div>
                                             </template>
-                                        </div>
-                                    </template>
+                                        </template>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -168,11 +170,17 @@
                                     <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
                                 </template>
                                 <div :class="`text-xs ${day.result.rideable ? 'text-green-600' : 'text-red-600'} space-y-0.5`">
+                                    <!-- Eb getijden -->
                                     <template x-if="day.result.lowTides.length > 0">
-                                        <div class="font-semibold" x-text="`Eb: ${formatTime(day.result.lowTides[0].time)}`"></div>
+                                        <template x-for="tide in day.result.lowTides" :key="tide.time">
+                                            <div class="font-semibold" x-text="`Eb: ${formatTime(tide.time)}`"></div>
+                                        </template>
                                     </template>
+                                    <!-- Vloed getijden -->
                                     <template x-if="day.result.highTides.length > 0">
-                                        <div x-text="`Vloed: ${formatTime(day.result.highTides[0].time)}`"></div>
+                                        <template x-for="tide in day.result.highTides" :key="tide.time">
+                                            <div x-text="`Vloed: ${formatTime(tide.time)}`"></div>
+                                        </template>
                                     </template>
                                 </div>
                             </div>
