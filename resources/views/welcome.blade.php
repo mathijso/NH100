@@ -4,7 +4,7 @@
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NH100 Route Planner</title>
+    <title x-data="todayStatus" x-text="loading ? 'NH100 Route Planner' : (result ? (result.rideable ? '✅ NH100 Route Planner - Route berijdbaar vandaag!' : '❌ NH100 Route Planner - Route niet geschikt vandaag') : 'NH100 Route Planner')" x-init="init()">NH100 Route Planner</title>
     
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/nh100.js'])
     @livewireStyles
