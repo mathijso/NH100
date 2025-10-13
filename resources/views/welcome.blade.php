@@ -78,10 +78,12 @@
             <div class="mt-6 grid md:grid-cols-2 gap-6">
                 <!-- Route Afbeelding -->
                 <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-center">
+                    <a href="https://www.komoot.com/nl-nl/tour/296286553" target="_blank">
                     <img src="{{ asset('images/nh100.png') }}" 
                          alt="NH100 Route" 
-                         class="rounded-lg shadow-lg max-h-96 object-contain"
+                         class="rounded-lg shadow-lg max-h-96 object-contain hover:scale-105 transition-transform duration-300"
                          onerror="this.style.display='none'" />
+                        </a>
                 </div>
 
                 <!-- Route Links en Info -->
@@ -133,7 +135,27 @@
 
         <!-- Kalender View -->
         <div x-data="calendar" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 animate-fadeIn">
-            <h2 class="text-2xl font-bold text-indigo-900 mb-6">Kalender Overzicht - Komende 30 Dagen</h2>
+            <!-- Kalender Header met Navigatie -->
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <button @click="previousMonth()" 
+                            class="p-2 rounded-lg bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-indigo-900" x-text="currentMonthYear"></h2>
+                    <button @click="nextMonth()" 
+                            class="p-2 rounded-lg bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <span x-text="`${days.length} dagen`"></span>
+                </div>
+            </div>
             
             <template x-if="loading">
                 <div class="flex items-center justify-center py-8">
@@ -145,7 +167,7 @@
                 <div>
                     <!-- Weekdag headers -->
                     <div class="grid grid-cols-7 gap-1 mb-2">
-                        <template x-for="day in ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']" :key="day">
+                        <template x-for="day in ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']" :key="day">
                             <div class="font-semibold text-center p-2 bg-gray-50 border-1 border-gray-200 text-dark rounded-lg text-sm md:text-base" 
                                  x-text="day"></div>
                         </template>
@@ -160,14 +182,18 @@
 
                         <!-- Calendar days -->
                         <template x-for="(day, index) in days" :key="index">
-                            <div :class="`${day.result.rideable ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'} border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow ${index === 0 ? 'ring-2 ring-indigo-500' : ''}`">
+                            <div :class="`${day.result.rideable ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'} border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow ${day.isToday ? 'ring-2 ring-indigo-500' : ''}`">
                                 <div class="flex justify-between items-start mb-1">
                                     <div :class="`font-bold ${day.result.rideable ? 'text-green-900' : 'text-red-900'} text-sm md:text-base`" 
                                          x-text="day.date.getDate()"></div>
                                     <span class="text-lg" x-text="day.result.rideable ? '✅' : '❌'"></span>
                                 </div>
-                                <template x-if="index === 0">
+                                <template x-if="day.isToday">
                                     <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu</div>
+                                </template>
+                                <template x-if="!day.isToday && day.daysFromToday > 0">
+                                    <div class="text-xs bg-gray-500 text-white px-1 py-0.5 rounded mb-1 text-center" 
+                                         x-text="`+${day.daysFromToday}d`"></div>
                                 </template>
                                 <div :class="`text-xs ${day.result.rideable ? 'text-green-600' : 'text-red-600'} space-y-0.5`">
                                     <!-- Eb getijden -->
@@ -191,11 +217,7 @@
         </div>
 
         <footer>
-        <div class="mt-8 text-center text-gray-500 text-sm">
-            <p>Getijdendata voor Egmond aan Zee</p>
-            <p class="text-xs mt-1">Meetstation Petten Zuid (52°46'21.6"N 4°38'58.9"E) - 18km noordelijk</p>
-            <p class="mt-2">⚠️ Controleer altijd de actuele omstandigheden voor je vertrekt</p>
-        </div>
+        
 
         <div class="mt-8 text-center text-gray-500 text-sm">
             <p>© 2025 NH100 Route Planner. Ontwikkeld door <a href="https://oggel-codelabs.nl" target="_blank" class="text-blue-500">Oggel Codelabs</a></p>
@@ -271,6 +293,18 @@
                 loading: true,
                 days: [],
                 firstDayOfWeek: 0,
+                currentDate: new Date(),
+                maxDays: 90,
+                
+                get currentMonthYear() {
+                    const monthNames = [
+                        'januari', 'februari', 'maart', 'april', 'mei', 'juni',
+                        'juli', 'augustus', 'september', 'oktober', 'november', 'december'
+                    ];
+                    const month = monthNames[this.currentDate.getMonth()];
+                    const year = this.currentDate.getFullYear();
+                    return `${month} ${year}`;
+                },
                 
                 async init() {
                     // Wait for tides data from Livewire
@@ -282,6 +316,22 @@
                     });
                 },
                 
+                previousMonth() {
+                    const newDate = new Date(this.currentDate);
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    this.currentDate = newDate;
+                    console.log('Previous month:', this.currentMonthYear);
+                    this.calculateDays(window.tidesData);
+                },
+                
+                nextMonth() {
+                    const newDate = new Date(this.currentDate);
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    this.currentDate = newDate;
+                    console.log('Next month:', this.currentMonthYear);
+                    this.calculateDays(window.tidesData);
+                },
+                
                 async loadTides() {
                     // Check if data is already available
                     if (window.tidesData && window.tidesData.length > 0) {
@@ -290,21 +340,25 @@
                         return;
                     }
                     
-                    // Wait a bit for Livewire to load
-                    const maxAttempts = 30;
+                    // Wait for Livewire to load real API data
+                    const maxAttempts = 50; // Increased attempts for API data
                     let attempts = 0;
                     
                     while ((!window.tidesData || window.tidesData.length === 0) && attempts < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await new Promise(resolve => setTimeout(resolve, 200));
                         attempts++;
+                        
+                        if (attempts % 10 === 0) {
+                            console.log('Calendar: Waiting for API tides...', attempts);
+                        }
                     }
                     
                     if (window.tidesData && window.tidesData.length > 0) {
-                        console.log('Calendar: Tides loaded after waiting:', window.tidesData.length);
+                        console.log('Calendar: API tides loaded:', window.tidesData.length);
                         this.calculateDays(window.tidesData);
                     } else {
-                        console.log('Calendar: Falling back to simulated data');
-                        // Fallback to simulated data
+                        console.log('Calendar: No API data available, using simulated data');
+                        // Only use simulated data as last resort
                         const tides = window.NH100.generateSimulatedTides();
                         this.calculateDays(tides);
                     }
@@ -314,19 +368,34 @@
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     
-                    this.firstDayOfWeek = today.getDay();
+                    // Start from current date or selected month
+                    const startDate = new Date(this.currentDate);
+                    startDate.setDate(1); // First day of the month
+                    
+                    // Calculate first day of week for the month (Monday = 0, Sunday = 6)
+                    const dayOfWeek = startDate.getDay();
+                    this.firstDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                     this.days = [];
                     
-                    for (let i = 0; i < 30; i++) {
-                        const date = new Date(today);
-                        date.setDate(today.getDate() + i);
+                    // Calculate days in the month
+                    const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+                    
+                    for (let i = 0; i < daysInMonth; i++) {
+                        const date = new Date(startDate);
+                        date.setDate(startDate.getDate() + i);
                         
-                        const result = window.NH100.isRouteRideable(date, tides);
-                        
-                        this.days.push({
-                            date: date,
-                            result: result
-                        });
+                        // Only show future dates and limit to maxDays
+                        const daysFromToday = Math.floor((date - today) / (1000 * 60 * 60 * 24));
+                        if (daysFromToday >= 0 && daysFromToday <= this.maxDays) {
+                            const result = window.NH100.isRouteRideable(date, tides);
+                            
+                            this.days.push({
+                                date: date,
+                                result: result,
+                                isToday: daysFromToday === 0,
+                                daysFromToday: daysFromToday
+                            });
+                        }
                     }
                     
                     this.loading = false;
