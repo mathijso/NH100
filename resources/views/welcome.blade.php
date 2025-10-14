@@ -100,7 +100,7 @@
                     </a>
                     
                     <!-- Weer Card -->
-                    <div x-data="windRose" class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 shadow-lg border border-blue-100">
+                    <div x-data="windRose" class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 shadow-lg border border-blue-100">
                         <template x-if="loading">
                             <div class="flex items-center justify-center py-8">
                                 <div class="animate-pulse text-gray-400 text-sm">Weergegevens laden...</div>
@@ -112,23 +112,23 @@
                         </template>
 
                         <template x-if="!loading && !error && windData">
-                            <div class="space-y-6">
-                                <!-- Header met locatie en tijd -->
-                                <div class="flex items-center justify-between">
+                            <div class="space-y-3">
+                                <!-- Header met titel en temperatuur -->
+                                <div class="flex items-center justify-between mb-2">
                                     <div>
-                                        <h4 class="text-xl font-bold text-gray-800">🌤️ Weer Egmond</h4>
-                                        <p class="text-xs text-gray-500 mt-1">Actuele omstandigheden</p>
+                                        <h4 class="text-lg font-bold text-gray-800">Weer op het strand</h4>
+                                        <p class="text-xs text-gray-500">Nu</p>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-3xl font-bold text-blue-600" x-text="`${windData.temperature}°C`"></div>
-                                        <div class="text-xs text-gray-500">Temperatuur</div>
+                                        <div class="text-2xl font-bold text-blue-600" x-text="`${windData.temperature}°C`"></div>
                                     </div>
                                 </div>
 
-                                <div class="flex items-start gap-6">
-                                    <!-- Windroos SVG -->
+                                <!-- Compacte layout: Windroos + Info cards -->
+                                <div class="flex flex-col md:flex-row items-center gap-3">
+                                    <!-- Windroos SVG - kleiner gemaakt -->
                                     <div class="relative flex-shrink-0">
-                                        <svg width="140" height="140" viewBox="0 0 140 140" class="transform">
+                                        <svg width="110" height="110" viewBox="0 0 110 110" class="transform">
                                             <!-- Achtergrond cirkel met gradient -->
                                             <defs>
                                                 <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
@@ -136,78 +136,78 @@
                                                     <stop offset="100%" style="stop-color:#bae6fd;stop-opacity:1" />
                                                 </radialGradient>
                                             </defs>
-                                            <circle cx="70" cy="70" r="60" fill="url(#bgGradient)" stroke="#0ea5e9" stroke-width="2"/>
+                                            <circle cx="55" cy="55" r="48" fill="url(#bgGradient)" stroke="#0ea5e9" stroke-width="2"/>
                                             
                                             <!-- Windrichtingen -->
                                             <g class="text-gray-600">
-                                                <text x="70" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#0284c7">N</text>
-                                                <text x="122" y="73" text-anchor="middle" font-size="12" fill="#64748b">O</text>
-                                                <text x="70" y="128" text-anchor="middle" font-size="12" fill="#64748b">Z</text>
-                                                <text x="18" y="73" text-anchor="middle" font-size="12" fill="#64748b">W</text>
+                                                <text x="55" y="15" text-anchor="middle" font-size="11" font-weight="bold" fill="#0284c7">N</text>
+                                                <text x="97" y="58" text-anchor="middle" font-size="10" fill="#64748b">O</text>
+                                                <text x="55" y="102" text-anchor="middle" font-size="10" fill="#64748b">Z</text>
+                                                <text x="13" y="58" text-anchor="middle" font-size="10" fill="#64748b">W</text>
                                             </g>
                                             
                                             <!-- Hulplijnen -->
-                                            <line x1="70" y1="25" x2="70" y2="115" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
-                                            <line x1="25" y1="70" x2="115" y2="70" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
-                                            <line x1="35" y1="35" x2="105" y2="105" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
-                                            <line x1="105" y1="35" x2="35" y2="105" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
+                                            <line x1="55" y1="18" x2="55" y2="92" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
+                                            <line x1="18" y1="55" x2="92" y2="55" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
+                                            <line x1="27" y1="27" x2="83" y2="83" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
+                                            <line x1="83" y1="27" x2="27" y2="83" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
                                             
                                             <!-- Windpijl (rotated based on wind direction) -->
-                                            <g :style="`transform: rotate(${windData.direction_degrees}deg); transform-origin: 70px 70px;`" class="transition-transform duration-1000">
+                                            <g :style="`transform: rotate(${windData.direction_degrees}deg); transform-origin: 55px 55px;`" class="transition-transform duration-1000">
                                                 <!-- Pijlschaduw -->
-                                                <line x1="70" y1="70" x2="70" y2="30" stroke="#1e293b" stroke-width="4" stroke-linecap="round" opacity="0.2"/>
+                                                <line x1="55" y1="55" x2="55" y2="23" stroke="#1e293b" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
                                                 <!-- Pijlschacht -->
-                                                <line x1="70" y1="70" x2="70" y2="28" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+                                                <line x1="55" y1="55" x2="55" y2="22" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
                                                 <!-- Pijlpunt -->
-                                                <polygon points="70,22 63,35 77,35" fill="#dc2626"/>
+                                                <polygon points="55,17 50,27 60,27" fill="#dc2626"/>
                                                 <!-- Pijlstaart -->
-                                                <line x1="63" y1="100" x2="70" y2="88" stroke="#dc2626" stroke-width="3"/>
-                                                <line x1="77" y1="100" x2="70" y2="88" stroke="#dc2626" stroke-width="3"/>
+                                                <line x1="50" y1="80" x2="55" y2="70" stroke="#dc2626" stroke-width="2"/>
+                                                <line x1="60" y1="80" x2="55" y2="70" stroke="#dc2626" stroke-width="2"/>
                                             </g>
                                             
                                             <!-- Centrum punt -->
-                                            <circle cx="70" cy="70" r="5" fill="#1e40af" stroke="white" stroke-width="2"/>
+                                            <circle cx="55" cy="55" r="4" fill="#1e40af" stroke="white" stroke-width="2"/>
                                         </svg>
                                     </div>
                                     
-                                    <!-- Wind info -->
-                                    <div class="flex-1 space-y-4">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div class="bg-white rounded-lg p-3 shadow-sm">
-                                                <div class="text-xs text-gray-500 mb-1">🧭 Richting</div>
-                                                <div class="text-base font-bold text-gray-800">
-                                                    <span x-text="windData.direction_text"></span>
-                                                    <span class="text-gray-400 text-xs ml-1" x-text="`(${windData.direction_degrees}°)`"></span>
+                                    <!-- Info cards in 3x2 grid op desktop, 2 kolommen op mobile -->
+                                    <div class="flex-1 w-full">
+                                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                                            <!-- Temperatuur card (alleen op kleine schermen zichtbaar als duplicate, anders verborgen) -->
+                                            <div class="bg-white rounded-lg p-2 shadow-sm md:hidden">
+                                                <div class="text-xs text-gray-500 mb-1">Temperatuur</div>
+                                                <div class="text-base font-bold text-blue-600">
+                                                    <span x-text="`${windData.temperature}°C`"></span>
                                                 </div>
                                             </div>
-                                            <div class="bg-white rounded-lg p-3 shadow-sm">
-                                                <div class="text-xs text-gray-500 mb-1">💨 Kracht</div>
-                                                <div class="text-base font-bold text-gray-800">
+                                            
+                                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">Richting</div>
+                                                <div class="text-sm font-bold text-gray-800">
+                                                    <span x-text="windData.direction_text"></span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">Kracht</div>
+                                                <div class="text-sm font-bold text-gray-800">
                                                     <span x-text="`${windData.beaufort} Bft`"></span>
                                                 </div>
                                             </div>
-                                            <div class="bg-white rounded-lg p-3 shadow-sm">
-                                                <div class="text-xs text-gray-500 mb-1">⚡ Snelheid</div>
-                                                <div class="text-base font-bold text-gray-800">
+                                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">Snelheid</div>
+                                                <div class="text-sm font-bold text-gray-800">
                                                     <span x-text="`${windData.speed_kmh} km/h`"></span>
                                                 </div>
                                             </div>
-                                            <div class="bg-white rounded-lg p-3 shadow-sm" x-show="windData.gust_kmh">
-                                                <div class="text-xs text-gray-500 mb-1">🌬️ Windstoten</div>
-                                                <div class="text-base font-bold text-orange-600">
+                                            <div class="bg-white rounded-lg p-2 shadow-sm" x-show="windData.gust_kmh">
+                                                <div class="text-xs text-gray-500 mb-1">Windstoten</div>
+                                                <div class="text-sm font-bold text-orange-600">
                                                     <span x-text="`${windData.gust_kmh} km/h`"></span>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <!-- Zonsopgang -->
-                                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 shadow-sm border border-amber-200" x-show="windData.sunrise">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-2xl">🌅</span>
-                                                <div>
-                                                    <div class="text-xs text-amber-700 font-medium">Zonsopgang</div>
-                                                    <div class="text-sm font-bold text-amber-900" x-text="formatSunrise(windData.sunrise)"></div>
-                                                </div>
+                                            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-2 shadow-sm border border-amber-200 col-span-2 lg:col-span-1" x-show="windData.sunrise">
+                                                <div class="text-xs text-amber-700 font-medium mb-1">Zonsopgang</div>
+                                                <div class="text-sm font-bold text-amber-900" x-text="formatSunrise(windData.sunrise)"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -412,45 +412,56 @@
                 error: null,
 
                 async init() {
-                    await this.loadWindData();
-
+                    console.log('🌤️ Wind Rose component initializing...');
+                    
                     // Listen for wind updates
                     window.addEventListener('wind-updated', (event) => {
+                        console.log('🌤️ Received wind-updated event:', event.detail.windData);
                         this.windData = event.detail.windData;
                         this.loading = false;
-                        console.log('Wind data updated:', this.windData);
+                        this.error = null;
                     });
+
+                    // Load data
+                    await this.loadWindData();
                 },
 
                 async loadWindData() {
-                    // Check if data is already available
-                    if (window.windData) {
-                        console.log('Wind data already available:', window.windData);
+                    // First check if data is immediately available
+                    if (window.windData && typeof window.windData === 'object' && window.windData.speed_kmh) {
+                        console.log('🌤️ Weather data immediately available:', window.windData);
                         this.windData = window.windData;
                         this.loading = false;
+                        this.error = null;
                         return;
                     }
 
-                    // Wait for Livewire to load
-                    const maxAttempts = 30;
+                    // Wait for data with shorter intervals
+                    console.log('🌤️ Waiting for weather data...');
+                    const maxAttempts = 50;
                     let attempts = 0;
 
-                    while (!window.windData && attempts < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                    while ((!window.windData || typeof window.windData !== 'object' || !window.windData.speed_kmh) && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 50));
                         attempts++;
 
                         if (attempts % 10 === 0) {
-                            console.log('Waiting for wind data...', attempts);
+                            console.log(`🌤️ Still waiting for weather data... (attempt ${attempts}/${maxAttempts})`);
+                        }
+
+                        // Check again
+                        if (window.windData && typeof window.windData === 'object' && window.windData.speed_kmh) {
+                            console.log('🌤️ Weather data loaded after waiting:', window.windData);
+                            this.windData = window.windData;
+                            this.loading = false;
+                            this.error = null;
+                            return;
                         }
                     }
 
-                    if (window.windData) {
-                        console.log('Wind data loaded after waiting:', window.windData);
-                        this.windData = window.windData;
-                    } else {
-                        this.error = 'Windgegevens niet beschikbaar';
-                    }
-
+                    // If we get here, data is not available
+                    console.error('🌤️ Weather data not available after waiting');
+                    this.error = 'Weergegevens niet beschikbaar';
                     this.loading = false;
                 },
 
