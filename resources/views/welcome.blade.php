@@ -31,7 +31,7 @@
                 De NH100 is het favoriete offroad trainingsrondje door het Noordhollands Duinreservaat,
                 over het strand en door de bossen van Schoorl en Bergen. Deze planner helpt je bepalen
                 wanneer de route berijdbaar is op basis van getijden en seizoensrestricties. De route is bedacht door <a
-                    href="http://nh100.nl/" target="_blank" class="text-amber-700 hover:text-amber-800 font-medium underline decoration-2 underline-offset-2"> Laurens ten Dam en Nikki Terpstra</a>.
+                    href="http://nh100.nl/" target="_blank" class="text-amber-700 hover:text-amber-800 font-medium underline decoration-2 underline-offset-2"> Laurens ten Dam en Niki Terpstra</a>.
             </p>
 
             <!-- Vandaag Status -->
