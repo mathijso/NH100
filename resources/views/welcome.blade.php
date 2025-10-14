@@ -99,85 +99,115 @@
                             onerror="this.style.display='none'" />
                     </a>
                     
-                    <!-- Windroos -->
-                    <div x-data="windRose" class="bg-white rounded-xl p-4 shadow-md">
+                    <!-- Weer Card -->
+                    <div x-data="windRose" class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 shadow-lg border border-blue-100">
                         <template x-if="loading">
-                            <div class="flex items-center justify-center py-4">
-                                <div class="animate-pulse text-gray-400 text-sm">Windgegevens laden...</div>
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-pulse text-gray-400 text-sm">Weergegevens laden...</div>
                             </div>
                         </template>
 
                         <template x-if="!loading && error">
-                            <div class="text-center text-gray-500 text-sm py-4" x-text="error"></div>
+                            <div class="text-center text-gray-500 text-sm py-8" x-text="error"></div>
                         </template>
 
                         <template x-if="!loading && !error && windData">
-                            <div class="flex items-center gap-6">
-                                <!-- Windroos SVG -->
-                                <div class="relative flex-shrink-0">
-                                    <svg width="120" height="120" viewBox="0 0 120 120" class="transform">
-                                        <!-- Achtergrond cirkel -->
-                                        <circle cx="60" cy="60" r="55" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="2"/>
-                                        
-                                        <!-- Windrichtingen -->
-                                        <g class="text-gray-400 text-xs">
-                                            <text x="60" y="15" text-anchor="middle" font-size="10" font-weight="bold" fill="#3b82f6">N</text>
-                                            <text x="105" y="63" text-anchor="middle" font-size="10" fill="#94a3b8">O</text>
-                                            <text x="60" y="110" text-anchor="middle" font-size="10" fill="#94a3b8">Z</text>
-                                            <text x="15" y="63" text-anchor="middle" font-size="10" fill="#94a3b8">W</text>
-                                        </g>
-                                        
-                                        <!-- Hulplijnen -->
-                                        <line x1="60" y1="20" x2="60" y2="100" stroke="#cbd5e1" stroke-width="1" opacity="0.5"/>
-                                        <line x1="20" y1="60" x2="100" y2="60" stroke="#cbd5e1" stroke-width="1" opacity="0.5"/>
-                                        
-                                        <!-- Windpijl (rotated based on wind direction) -->
-                                        <g :style="`transform: rotate(${windData.direction_degrees}deg); transform-origin: 60px 60px;`" class="transition-transform duration-1000">
-                                            <!-- Pijlschacht -->
-                                            <line x1="60" y1="60" x2="60" y2="25" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-                                            <!-- Pijlpunt -->
-                                            <polygon points="60,20 55,30 65,30" fill="#ef4444"/>
-                                            <!-- Pijlstaart -->
-                                            <line x1="55" y1="85" x2="60" y2="75" stroke="#ef4444" stroke-width="2"/>
-                                            <line x1="65" y1="85" x2="60" y2="75" stroke="#ef4444" stroke-width="2"/>
-                                        </g>
-                                        
-                                        <!-- Centrum punt -->
-                                        <circle cx="60" cy="60" r="4" fill="#1e40af"/>
-                                    </svg>
+                            <div class="space-y-6">
+                                <!-- Header met locatie en tijd -->
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="text-xl font-bold text-gray-800">🌤️ Weer Egmond</h4>
+                                        <p class="text-xs text-gray-500 mt-1">Actuele omstandigheden</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-3xl font-bold text-blue-600" x-text="`${windData.temperature}°C`"></div>
+                                        <div class="text-xs text-gray-500">Temperatuur</div>
+                                    </div>
                                 </div>
-                                
-                                <!-- Wind info -->
-                                <div class="flex-1 space-y-2">
-                                    <div class="flex items-baseline gap-2">
-                                        <h4 class="text-lg font-bold text-gray-800">Wind Egmond</h4>
-                                        <span class="text-xs text-gray-500">(nu)</span>
+
+                                <div class="flex items-start gap-6">
+                                    <!-- Windroos SVG -->
+                                    <div class="relative flex-shrink-0">
+                                        <svg width="140" height="140" viewBox="0 0 140 140" class="transform">
+                                            <!-- Achtergrond cirkel met gradient -->
+                                            <defs>
+                                                <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+                                                    <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+                                                    <stop offset="100%" style="stop-color:#bae6fd;stop-opacity:1" />
+                                                </radialGradient>
+                                            </defs>
+                                            <circle cx="70" cy="70" r="60" fill="url(#bgGradient)" stroke="#0ea5e9" stroke-width="2"/>
+                                            
+                                            <!-- Windrichtingen -->
+                                            <g class="text-gray-600">
+                                                <text x="70" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="#0284c7">N</text>
+                                                <text x="122" y="73" text-anchor="middle" font-size="12" fill="#64748b">O</text>
+                                                <text x="70" y="128" text-anchor="middle" font-size="12" fill="#64748b">Z</text>
+                                                <text x="18" y="73" text-anchor="middle" font-size="12" fill="#64748b">W</text>
+                                            </g>
+                                            
+                                            <!-- Hulplijnen -->
+                                            <line x1="70" y1="25" x2="70" y2="115" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
+                                            <line x1="25" y1="70" x2="115" y2="70" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
+                                            <line x1="35" y1="35" x2="105" y2="105" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
+                                            <line x1="105" y1="35" x2="35" y2="105" stroke="#94a3b8" stroke-width="1" opacity="0.3"/>
+                                            
+                                            <!-- Windpijl (rotated based on wind direction) -->
+                                            <g :style="`transform: rotate(${windData.direction_degrees}deg); transform-origin: 70px 70px;`" class="transition-transform duration-1000">
+                                                <!-- Pijlschaduw -->
+                                                <line x1="70" y1="70" x2="70" y2="30" stroke="#1e293b" stroke-width="4" stroke-linecap="round" opacity="0.2"/>
+                                                <!-- Pijlschacht -->
+                                                <line x1="70" y1="70" x2="70" y2="28" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+                                                <!-- Pijlpunt -->
+                                                <polygon points="70,22 63,35 77,35" fill="#dc2626"/>
+                                                <!-- Pijlstaart -->
+                                                <line x1="63" y1="100" x2="70" y2="88" stroke="#dc2626" stroke-width="3"/>
+                                                <line x1="77" y1="100" x2="70" y2="88" stroke="#dc2626" stroke-width="3"/>
+                                            </g>
+                                            
+                                            <!-- Centrum punt -->
+                                            <circle cx="70" cy="70" r="5" fill="#1e40af" stroke="white" stroke-width="2"/>
+                                        </svg>
                                     </div>
                                     
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <div class="text-xs text-gray-500">Richting</div>
-                                            <div class="text-sm font-semibold text-gray-800">
-                                                <span x-text="windData.direction_text"></span>
-                                                <span class="text-gray-400 text-xs ml-1" x-text="`(${windData.direction_degrees}°)`"></span>
+                                    <!-- Wind info -->
+                                    <div class="flex-1 space-y-4">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">🧭 Richting</div>
+                                                <div class="text-base font-bold text-gray-800">
+                                                    <span x-text="windData.direction_text"></span>
+                                                    <span class="text-gray-400 text-xs ml-1" x-text="`(${windData.direction_degrees}°)`"></span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">💨 Kracht</div>
+                                                <div class="text-base font-bold text-gray-800">
+                                                    <span x-text="`${windData.beaufort} Bft`"></span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                                <div class="text-xs text-gray-500 mb-1">⚡ Snelheid</div>
+                                                <div class="text-base font-bold text-gray-800">
+                                                    <span x-text="`${windData.speed_kmh} km/h`"></span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-white rounded-lg p-3 shadow-sm" x-show="windData.gust_kmh">
+                                                <div class="text-xs text-gray-500 mb-1">🌬️ Windstoten</div>
+                                                <div class="text-base font-bold text-orange-600">
+                                                    <span x-text="`${windData.gust_kmh} km/h`"></span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div class="text-xs text-gray-500">Kracht</div>
-                                            <div class="text-sm font-semibold text-gray-800">
-                                                <span x-text="`${windData.beaufort} Bft`"></span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-gray-500">Snelheid</div>
-                                            <div class="text-sm font-semibold text-gray-800">
-                                                <span x-text="`${windData.speed_kmh} km/h`"></span>
-                                            </div>
-                                        </div>
-                                        <div x-show="windData.gust_kmh">
-                                            <div class="text-xs text-gray-500">Windstoten</div>
-                                            <div class="text-sm font-semibold text-orange-600">
-                                                <span x-text="`${windData.gust_kmh} km/h`"></span>
+
+                                        <!-- Zonsopgang -->
+                                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 shadow-sm border border-amber-200" x-show="windData.sunrise">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-2xl">🌅</span>
+                                                <div>
+                                                    <div class="text-xs text-amber-700 font-medium">Zonsopgang</div>
+                                                    <div class="text-sm font-bold text-amber-900" x-text="formatSunrise(windData.sunrise)"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -422,6 +452,21 @@
                     }
 
                     this.loading = false;
+                },
+
+                formatSunrise(sunriseStr) {
+                    if (!sunriseStr) return '';
+                    
+                    try {
+                        // Parse ISO8601 date string (e.g., "2025-10-14T08:06")
+                        const date = new Date(sunriseStr);
+                        const hours = date.getHours().toString().padStart(2, '0');
+                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                        return `${hours}:${minutes}`;
+                    } catch (e) {
+                        console.error('Error parsing sunrise time:', e);
+                        return sunriseStr;
+                    }
                 }
             }));
 

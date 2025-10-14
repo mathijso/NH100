@@ -8,39 +8,27 @@ use Illuminate\Support\Facades\Cache;
 
 class WindDataService
 {
-    private const API_URL = 'https://api.windy.com/api/point-forecast/v2';
+    private const API_URL = 'https://api.open-meteo.com/v1/forecast';
     
     // Egmond aan Zee coördinaten: 52°37'02.6"N 4°37'04.7"E
-    private const EGMOND_LAT = 52.617389;
-    private const EGMOND_LON = 4.617972;
-    
-    private string $apiKey;
-
-    public function __construct()
-    {
-        $this->apiKey = env('WINDY_API_KEY', '');
-    }
+    private const EGMOND_LAT = 52.624449;
+    private const EGMOND_LON = 4.61718;
 
     /**
-     * Haal actuele windgegevens op voor Egmond aan Zee
+     * Haal actuele weergegevens op voor Egmond aan Zee
      */
     public function getCurrentWindData(): ?array
     {
-        if (empty($this->apiKey)) {
-            Log::warning('Windy API key niet geconfigureerd');
-            return null;
-        }
-
         // Cache voor 15 minuten
         return Cache::remember('wind_data_egmond', 900, function () {
             try {
-                $response = Http::timeout(10)->post(self::API_URL, [
-                    'lat' => self::EGMOND_LAT,
-                    'lon' => self::EGMOND_LON,
-                    'model' => 'gfs',
-                    'parameters' => ['wind', 'windGust'],
-                    'levels' => ['surface'],
-                    'key' => $this->apiKey,
+                $response = Http::timeout(10)->get(self::API_URL, [
+                    'latitude' => self::EGMOND_LAT,
+                    'longitude' => self::EGMOND_LON,
+                    'daily' => 'sunrise',
+                    'current' => 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+                    'timezone' => 'auto',
+                    'forecast_days' => 1,
                 ]);
 
                 if ($response->successful()) {
@@ -48,14 +36,14 @@ class WindDataService
                     return $this->processWindData($data);
                 }
 
-                Log::error('Windy API error', [
+                Log::error('Open-Meteo API error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
 
                 return null;
             } catch (\Exception $e) {
-                Log::error('Error fetching wind data', [
+                Log::error('Error fetching weather data', [
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
@@ -65,65 +53,46 @@ class WindDataService
     }
 
     /**
-     * Verwerk de ruwe windgegevens naar een bruikbaar formaat
+     * Verwerk de ruwe weergegevens naar een bruikbaar formaat
      */
     private function processWindData(array $data): ?array
     {
-        if (!isset($data['ts']) || empty($data['ts'])) {
+        if (!isset($data['current'])) {
             return null;
         }
 
-        // Neem de eerste (meest actuele) waarde
-        $index = 0;
+        $current = $data['current'];
+        $daily = $data['daily'] ?? [];
         
-        $windU = $data['wind_u-surface'][$index] ?? null;
-        $windV = $data['wind_v-surface'][$index] ?? null;
-        $gust = $data['gust-surface'][$index] ?? null;
+        $windSpeedKmh = $current['wind_speed_10m'] ?? null;
+        $windDirection = $current['wind_direction_10m'] ?? null;
+        $gustKmh = $current['wind_gusts_10m'] ?? null;
+        $temperature = $current['temperature_2m'] ?? null;
+        $sunrise = $daily['sunrise'][0] ?? null;
 
-        if ($windU === null || $windV === null) {
+        if ($windSpeedKmh === null || $windDirection === null) {
             return null;
         }
 
-        // Bereken windsnelheid en richting
-        $windSpeed = sqrt($windU * $windU + $windV * $windV);
-        $windDirection = $this->calculateWindDirection($windU, $windV);
         $windDirectionText = $this->getWindDirectionText($windDirection);
         
-        // Converteer m/s naar km/h en Beaufort
-        $windSpeedKmh = round($windSpeed * 3.6, 1);
-        $beaufort = $this->calculateBeaufort($windSpeed);
+        // Converteer km/h naar m/s voor Beaufort berekening
+        $windSpeedMs = $windSpeedKmh / 3.6;
+        $beaufort = $this->calculateBeaufort($windSpeedMs);
 
         return [
-            'speed_ms' => round($windSpeed, 1),
-            'speed_kmh' => $windSpeedKmh,
+            'speed_ms' => round($windSpeedMs, 1),
+            'speed_kmh' => round($windSpeedKmh, 1),
             'direction_degrees' => round($windDirection),
             'direction_text' => $windDirectionText,
             'beaufort' => $beaufort,
-            'gust_ms' => $gust ? round($gust, 1) : null,
-            'gust_kmh' => $gust ? round($gust * 3.6, 1) : null,
-            'timestamp' => $data['ts'][$index],
+            'gust_ms' => $gustKmh ? round($gustKmh / 3.6, 1) : null,
+            'gust_kmh' => $gustKmh ? round($gustKmh, 1) : null,
+            'temperature' => $temperature ? round($temperature, 1) : null,
+            'sunrise' => $sunrise,
+            'timestamp' => $current['time'] ?? null,
             'location' => 'Egmond aan Zee',
         ];
-    }
-
-    /**
-     * Bereken windrichting in graden (0 = Noord, 90 = Oost, etc.)
-     * De windrichting geeft aan waar de wind VANDAAN komt
-     */
-    private function calculateWindDirection(float $u, float $v): float
-    {
-        // Bereken de hoek in radialen
-        $angle = atan2(-$u, -$v);
-        
-        // Converteer naar graden (0-360)
-        $degrees = rad2deg($angle);
-        
-        // Zorg ervoor dat het tussen 0 en 360 is
-        if ($degrees < 0) {
-            $degrees += 360;
-        }
-        
-        return $degrees;
     }
 
     /**
