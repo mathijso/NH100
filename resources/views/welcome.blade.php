@@ -14,6 +14,7 @@
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     @livewire('tide-data')
+    @livewire('wind-data')
 
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
@@ -89,13 +90,101 @@
 
             <!-- Route Info met Afbeelding en Links -->
             <div class="mt-6 grid md:grid-cols-3 gap-6">
-                <!-- Route Afbeelding -->
-                <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-center col-span-2">
-                    <a href="https://www.komoot.com/nl-nl/tour/296286553" target="_blank">
+                <!-- Route Afbeelding met Windroos -->
+                <div class="bg-gray-50 rounded-xl p-4 flex flex-col gap-4 col-span-2">
+                    <!-- Route Afbeelding -->
+                    <a href="https://www.komoot.com/nl-nl/tour/296286553" target="_blank" class="flex-1 flex items-center justify-center">
                         <img src="{{ asset('images/nh100.png') }}" alt="NH100 Route"
-                            class="rounded-lg shadow-lg max-h-96 object-contain hover:scale-105 transition-transform duration-300"
+                            class="rounded-lg shadow-lg max-h-80 object-contain hover:scale-105 transition-transform duration-300"
                             onerror="this.style.display='none'" />
                     </a>
+                    
+                    <!-- Windroos -->
+                    <div x-data="windRose" class="bg-white rounded-xl p-4 shadow-md">
+                        <template x-if="loading">
+                            <div class="flex items-center justify-center py-4">
+                                <div class="animate-pulse text-gray-400 text-sm">Windgegevens laden...</div>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && error">
+                            <div class="text-center text-gray-500 text-sm py-4" x-text="error"></div>
+                        </template>
+
+                        <template x-if="!loading && !error && windData">
+                            <div class="flex items-center gap-6">
+                                <!-- Windroos SVG -->
+                                <div class="relative flex-shrink-0">
+                                    <svg width="120" height="120" viewBox="0 0 120 120" class="transform">
+                                        <!-- Achtergrond cirkel -->
+                                        <circle cx="60" cy="60" r="55" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="2"/>
+                                        
+                                        <!-- Windrichtingen -->
+                                        <g class="text-gray-400 text-xs">
+                                            <text x="60" y="15" text-anchor="middle" font-size="10" font-weight="bold" fill="#3b82f6">N</text>
+                                            <text x="105" y="63" text-anchor="middle" font-size="10" fill="#94a3b8">O</text>
+                                            <text x="60" y="110" text-anchor="middle" font-size="10" fill="#94a3b8">Z</text>
+                                            <text x="15" y="63" text-anchor="middle" font-size="10" fill="#94a3b8">W</text>
+                                        </g>
+                                        
+                                        <!-- Hulplijnen -->
+                                        <line x1="60" y1="20" x2="60" y2="100" stroke="#cbd5e1" stroke-width="1" opacity="0.5"/>
+                                        <line x1="20" y1="60" x2="100" y2="60" stroke="#cbd5e1" stroke-width="1" opacity="0.5"/>
+                                        
+                                        <!-- Windpijl (rotated based on wind direction) -->
+                                        <g :style="`transform: rotate(${windData.direction_degrees}deg); transform-origin: 60px 60px;`" class="transition-transform duration-1000">
+                                            <!-- Pijlschacht -->
+                                            <line x1="60" y1="60" x2="60" y2="25" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                                            <!-- Pijlpunt -->
+                                            <polygon points="60,20 55,30 65,30" fill="#ef4444"/>
+                                            <!-- Pijlstaart -->
+                                            <line x1="55" y1="85" x2="60" y2="75" stroke="#ef4444" stroke-width="2"/>
+                                            <line x1="65" y1="85" x2="60" y2="75" stroke="#ef4444" stroke-width="2"/>
+                                        </g>
+                                        
+                                        <!-- Centrum punt -->
+                                        <circle cx="60" cy="60" r="4" fill="#1e40af"/>
+                                    </svg>
+                                </div>
+                                
+                                <!-- Wind info -->
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex items-baseline gap-2">
+                                        <h4 class="text-lg font-bold text-gray-800">Wind Egmond</h4>
+                                        <span class="text-xs text-gray-500">(nu)</span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <div class="text-xs text-gray-500">Richting</div>
+                                            <div class="text-sm font-semibold text-gray-800">
+                                                <span x-text="windData.direction_text"></span>
+                                                <span class="text-gray-400 text-xs ml-1" x-text="`(${windData.direction_degrees}°)`"></span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-500">Kracht</div>
+                                            <div class="text-sm font-semibold text-gray-800">
+                                                <span x-text="`${windData.beaufort} Bft`"></span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-500">Snelheid</div>
+                                            <div class="text-sm font-semibold text-gray-800">
+                                                <span x-text="`${windData.speed_kmh} km/h`"></span>
+                                            </div>
+                                        </div>
+                                        <div x-show="windData.gust_kmh">
+                                            <div class="text-xs text-gray-500">Windstoten</div>
+                                            <div class="text-sm font-semibold text-orange-600">
+                                                <span x-text="`${windData.gust_kmh} km/h`"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
 
@@ -286,6 +375,56 @@
     <script>
         // Alpine.js components
         document.addEventListener('alpine:init', () => {
+            // Wind Rose Component
+            Alpine.data('windRose', () => ({
+                loading: true,
+                windData: null,
+                error: null,
+
+                async init() {
+                    await this.loadWindData();
+
+                    // Listen for wind updates
+                    window.addEventListener('wind-updated', (event) => {
+                        this.windData = event.detail.windData;
+                        this.loading = false;
+                        console.log('Wind data updated:', this.windData);
+                    });
+                },
+
+                async loadWindData() {
+                    // Check if data is already available
+                    if (window.windData) {
+                        console.log('Wind data already available:', window.windData);
+                        this.windData = window.windData;
+                        this.loading = false;
+                        return;
+                    }
+
+                    // Wait for Livewire to load
+                    const maxAttempts = 30;
+                    let attempts = 0;
+
+                    while (!window.windData && attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+
+                        if (attempts % 10 === 0) {
+                            console.log('Waiting for wind data...', attempts);
+                        }
+                    }
+
+                    if (window.windData) {
+                        console.log('Wind data loaded after waiting:', window.windData);
+                        this.windData = window.windData;
+                    } else {
+                        this.error = 'Windgegevens niet beschikbaar';
+                    }
+
+                    this.loading = false;
+                }
+            }));
+
             // Today Status Component
             Alpine.data('todayStatus', () => ({
                 loading: true,
