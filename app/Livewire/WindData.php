@@ -29,19 +29,19 @@ class WindData extends Component
             $this->windData = $windService->getCurrentWindData();
 
             if ($this->windData === null) {
-                $this->error = 'Kon windgegevens niet ophalen. Controleer je API key.';
+                $this->error = 'Kon weergegevens niet ophalen van Open-Meteo API.';
             }
 
-            Log::info('Wind data loaded', [
+            Log::info('Weather data loaded', [
                 'data' => $this->windData,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error loading wind data', [
+            Log::error('Error loading weather data', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $this->error = 'Fout bij ophalen windgegevens.';
+            $this->error = 'Fout bij ophalen weergegevens.';
             $this->windData = null;
         }
 
