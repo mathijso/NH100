@@ -116,7 +116,7 @@
                                 <!-- Header met titel en temperatuur -->
                                 <div class="flex items-center justify-between mb-2">
                                     <div>
-                                        <h4 class="text-lg font-bold text-gray-800">Weer op het strand</h4>
+                                        <h4 class="text-lg font-bold text-gray-800">Weer onderweg</h4>
                                         <p class="text-xs text-gray-500">Nu</p>
                                     </div>
                                     <div class="text-right">
@@ -318,73 +318,138 @@
 
             <template x-if="!loading">
                 <div>
-                    <!-- Weekdag headers -->
-                    <div class="grid grid-cols-7 gap-1 mb-2">
-                        <template x-for="day in ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']" :key="day">
-                            <div class="font-semibold text-center p-2 bg-gray-50 border-1 border-gray-200 text-dark rounded-lg text-sm md:text-base"
-                                x-text="day"></div>
+                    <!-- Mobiele Lijstweergave -->
+                    <div class="md:hidden space-y-2">
+                        <template x-for="(day, index) in mobileDays" :key="index">
+                            <div
+                                :class="{
+                                    'bg-green-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm': day.result.status === 'green',
+                                    'bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 shadow-sm': day.result.status === 'amber',
+                                    'bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm': !day.result.status || day.result.status === 'red',
+                                    'ring-2 ring-indigo-500': day.isToday
+                                }">
+                                <!-- Header: Datum + Status -->
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl"
+                                            x-text="day.result.status === 'green' ? '✅' : (day.result.status === 'amber' ? '🟧' : '❌')"></span>
+                                        <div>
+                                            <div class="font-bold text-lg"
+                                                :class="{
+                                                    'text-green-900': day.result.status === 'green',
+                                                    'text-yellow-900': day.result.status === 'amber',
+                                                    'text-red-900': !day.result.status || day.result.status === 'red'
+                                                }"
+                                                x-text="formatDateFull(day.date)"></div>
+                                            <div class="text-xs text-gray-500" x-text="getWeekday(day.date)"></div>
+                                        </div>
+                                    </div>
+                                    <template x-if="day.isToday">
+                                        <div class="bg-black text-white px-2 py-1 rounded text-xs font-bold">NU</div>
+                                    </template>
+                                </div>
+
+                                <!-- Status bericht -->
+                                <template x-if="day.result.reason">
+                                    <div class="mb-2 text-sm font-medium"
+                                        :class="{
+                                            'text-green-800': day.result.status === 'green',
+                                            'text-yellow-800': day.result.status === 'amber',
+                                            'text-red-800': !day.result.status || day.result.status === 'red'
+                                        }"
+                                        x-text="day.result.reason"></div>
+                                </template>
+
+                                <!-- Getijden informatie -->
+                                <template x-if="day.result.allTides && day.result.allTides.length > 0">
+                                    <div class="space-y-1">
+                                        <template x-for="tide in day.result.allTides" :key="tide.time">
+                                            <div class="flex items-center gap-2 text-sm"
+                                                :class="{
+                                                    'text-green-700': day.result.status === 'green',
+                                                    'text-yellow-700': day.result.status === 'amber',
+                                                    'text-red-700': !day.result.status || day.result.status === 'red'
+                                                }">
+                                                <span class="font-semibold min-w-[50px]" x-text="tide.tideType"></span>
+                                                <span x-text="formatTime(tide.time)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
                     </div>
 
-                    <!-- Kalender grid -->
-                    <div class="grid grid-cols-7 gap-1">
-                        <!-- Empty cells for days before eerste dag van de maand -->
-                        <template x-for="i in firstDayOfWeek" :key="`empty-${i}`">
-                            <div class="bg-gray-100 rounded-lg p-2 min-h-24"></div>
-                        </template>
+                    <!-- Desktop Kalender Grid -->
+                    <div class="hidden md:block">
+                        <!-- Weekdag headers -->
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <template x-for="day in ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']" :key="day">
+                                <div class="font-semibold text-center p-2 bg-gray-50 border-1 border-gray-200 text-dark rounded-lg text-sm md:text-base"
+                                    x-text="day"></div>
+                            </template>
+                        </div>
 
-                        <!-- Calendar days -->
-                        <template x-for="(day, index) in days" :key="index">
-                            <div
-                                :class="{
-                                    'bg-green-50 border-green-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day
-                                        .result.status === 'green',
-                                    'bg-yellow-50 border-yellow-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day
-                                        .result.status === 'amber',
-                                    'bg-red-50 border-red-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow':
-                                        !day.result.status || day.result.status === 'red',
-                                    'ring-2 ring-indigo-500': day.isToday
-                                }">
-                                <div class="flex justify-between items-start mb-1">
-                                    <div :class="{
-                                        'font-bold text-green-900 text-sm md:text-base': day.result
-                                            .status === 'green',
-                                        'font-bold text-yellow-900 text-sm md:text-base': day.result
-                                            .status === 'amber',
-                                        'font-bold text-red-900 text-sm md:text-base': !day.result.status || day.result
-                                            .status === 'red'
-                                    }"
-                                        x-text="day.date.getDate()"></div>
-                                    <span class="text-lg"
-                                        x-text="day.result.status === 'green' ? '✅' : (day.result.status === 'amber' ? '🟧' : '❌')"></span>
-                                </div>
-                                <template x-if="day.isToday">
-                                    <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu
-                                    </div>
-                                </template>
-                                <!-- Toon reden bij rode dagen in plaats van +d/-d badge -->
-                                <template
-                                    x-if="day.result && (day.result.status === 'red' || !day.result.status) && day.result.reason">
-                                    <div class="text-[11px] bg-red-100 text-red-800 px-1 py-0.5 rounded mb-1 text-center truncate"
-                                        x-text="day.result.reason"></div>
-                                </template>
+                        <!-- Kalender grid -->
+                        <div class="grid grid-cols-7 gap-1">
+                            <!-- Empty cells for days before eerste dag van de maand -->
+                            <template x-for="i in firstDayOfWeek" :key="`empty-${i}`">
+                                <div class="bg-gray-100 rounded-lg p-2 min-h-24"></div>
+                            </template>
+
+                            <!-- Calendar days -->
+                            <template x-for="(day, index) in days" :key="index">
                                 <div
                                     :class="{
-                                        'text-xs text-green-600 space-y-0.5': day.result.status === 'green',
-                                        'text-xs text-yellow-600 space-y-0.5': day.result.status === 'amber',
-                                        'text-xs text-red-600 space-y-0.5': !day.result.status || day.result
-                                            .status === 'red'
+                                        'bg-green-50 border-green-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day
+                                            .result.status === 'green',
+                                        'bg-yellow-50 border-yellow-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow': day
+                                            .result.status === 'amber',
+                                        'bg-red-50 border-red-400 border-2 rounded-lg p-2 min-h-24 hover:shadow-lg transition-shadow':
+                                            !day.result.status || day.result.status === 'red',
+                                        'ring-2 ring-indigo-500': day.isToday
                                     }">
-                                    <!-- Alle getijden chronologisch -->
-                                    <template x-if="day.result.allTides && day.result.allTides.length > 0">
-                                        <template x-for="tide in day.result.allTides" :key="tide.time">
-                                            <div :class="tide.tideType === 'Eb' ? 'font-semibold' : ''"
-                                                x-text="`${tide.tideType}: ${formatTime(tide.time)}`"></div>
-                                        </template>
+                                    <div class="flex justify-between items-start mb-1">
+                                        <div :class="{
+                                            'font-bold text-green-900 text-sm md:text-base': day.result
+                                                .status === 'green',
+                                            'font-bold text-yellow-900 text-sm md:text-base': day.result
+                                                .status === 'amber',
+                                            'font-bold text-red-900 text-sm md:text-base': !day.result.status || day.result
+                                                .status === 'red'
+                                        }"
+                                            x-text="day.date.getDate()"></div>
+                                        <span class="text-lg"
+                                            x-text="day.result.status === 'green' ? '✅' : (day.result.status === 'amber' ? '🟧' : '❌')"></span>
+                                    </div>
+                                    <template x-if="day.isToday">
+                                        <div class="text-xs bg-black text-white px-1 py-0.5 rounded mb-1 text-center">Nu
+                                        </div>
                                     </template>
+                                    <!-- Toon reden bij rode dagen in plaats van +d/-d badge -->
+                                    <template
+                                        x-if="day.result && (day.result.status === 'red' || !day.result.status) && day.result.reason">
+                                        <div class="text-[11px] bg-red-100 text-red-800 px-1 py-0.5 rounded mb-1 text-center truncate"
+                                            x-text="day.result.reason"></div>
+                                    </template>
+                                    <div
+                                        :class="{
+                                            'text-xs text-green-600 space-y-0.5': day.result.status === 'green',
+                                            'text-xs text-yellow-600 space-y-0.5': day.result.status === 'amber',
+                                            'text-xs text-red-600 space-y-0.5': !day.result.status || day.result
+                                                .status === 'red'
+                                        }">
+                                        <!-- Alle getijden chronologisch -->
+                                        <template x-if="day.result.allTides && day.result.allTides.length > 0">
+                                            <template x-for="tide in day.result.allTides" :key="tide.time">
+                                                <div :class="tide.tideType === 'Eb' ? 'font-semibold' : ''"
+                                                    x-text="`${tide.tideType}: ${formatTime(tide.time)}`"></div>
+                                            </template>
+                                        </template>
+                                    </div>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -558,6 +623,11 @@
                     return `${month} ${year}`;
                 },
 
+                get mobileDays() {
+                    // Filter alleen vandaag en toekomstige dagen
+                    return this.days.filter(day => day.daysFromToday >= 0);
+                },
+
                 async init() {
                     // Wait for tides data from Livewire
                     await this.loadTides();
@@ -660,6 +730,21 @@
 
                 formatTime(time) {
                     return window.NH100.formatTime(time);
+                },
+
+                formatDateFull(date) {
+                    const day = date.getDate();
+                    const monthNames = [
+                        'januari', 'februari', 'maart', 'april', 'mei', 'juni',
+                        'juli', 'augustus', 'september', 'oktober', 'november', 'december'
+                    ];
+                    const month = monthNames[date.getMonth()];
+                    return `${day} ${month}`;
+                },
+
+                getWeekday(date) {
+                    const weekdays = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+                    return weekdays[date.getDay()];
                 }
             }));
         });
