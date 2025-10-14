@@ -72,7 +72,7 @@ export function isRouteRideable(date, tides) {
         return {
             rideable: false,
             status: 'red',
-            reason: 'Strand alleen voor 10:00 toegankelijk',
+            reason: 'Strand voor 10:00 toegankelijk',
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides

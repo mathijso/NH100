@@ -21,7 +21,6 @@ De route heeft strikte voorwaarden:
 - **07:00**: Aanbevolen starttijd
 - **10:30**: Uiterste tijd om uit duinreservaat te zijn
 - **10:00-12:00**: Strandgedeelte fietsen
-- **12:00+**: MTB parcours
 
 ### Getijden Vereisten
 Voor het strandgedeelte (10:00-12:00) moet het eb zijn:
@@ -42,14 +41,6 @@ Voor het strandgedeelte (10:00-12:00) moet het eb zijn:
 - Duinreservaat openingstijden
 - Je eigen veiligheid en conditie
 
-## Licentie
-
-Vrij te gebruiken voor persoonlijk gebruik.
-
-## Contact & Bijdragen
-
-Verbeteringen en suggesties zijn welkom!
-
 
 ## Data Bronnen
 
@@ -57,6 +48,7 @@ De applicatie gebruikt getijdendata van Rijkswaterstaat in CSV formaat:
 - Data bestanden bevinden zich in `public/data/`
 - Formaat: `YYYY.csv` (bijv. `2025.csv`, `2026.csv`)
 - De applicatie ondersteunt automatisch meerdere jaren
+- voor het meetpunt wordt IJmuiden buitenhaven gebruikt
 
 ### CSV Formaat
 ```
@@ -71,13 +63,12 @@ Datum;Nederlandsetijd;Hoogwater/laagwater;Waarde
 3. Geen code aanpassingen nodig
 
 ## Todo
-- [x] Gebruik Rijkswaterstaat CSV data voor betrouwbare getijden informatie
 - [ ] Weer voorspelling integratie
 - [ ] Wind data (belangrijk voor strand)
-- [ ] GPS track export
-- [ ] Kalender export (iCal) ics file
-- [ ] Notificaties voor goede dagen
 - [ ] Delen functionaliteit
 - [ ] PWA (Progressive Web App) support
 - [ ] H100 variant toevoegen
  
+
+ ## Contact & Bijdragen
+Verbeteringen en suggesties zijn welkom via mathijs@oggel-codelabs.nl
