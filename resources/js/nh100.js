@@ -1,7 +1,3 @@
-// NH100 Route Planner - Tide Calculations and Logic
-
-const EGMOND_LAT = 52.6167;
-const EGMOND_LON = 4.6333;
 
 // Datum helper functies
 export function formatDate(date) {
@@ -76,7 +72,7 @@ export function isRouteRideable(date, tides) {
         return {
             rideable: false,
             status: 'red',
-            reason: 'Strand alleen voor 10:00 toegankelijk (buiten winterseizoen)',
+            reason: 'Strand alleen voor 10:00 toegankelijk',
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
@@ -84,27 +80,27 @@ export function isRouteRideable(date, tides) {
     }
 
     // Voorrangsregels gebruiker (aangescherpt):
-    // 1) Groen als Eb valt tussen 09:00 en 12:00
+    // Regel 1) Groen als Eb valt tussen 08:00 en 13:00
     const nine = new Date(date);
-    nine.setHours(9, 0, 0, 0);
+    nine.setHours(8, 0, 0, 0);
     const twelve = new Date(date);
-    twelve.setHours(12, 0, 0, 0);
+    twelve.setHours(14, 0, 0, 0);
 
     const ebInMorningWindow = lowTides.find(t => t.time >= nine && t.time <= twelve);
     if (ebInMorningWindow) {
         return {
             rideable: true,
             status: 'green',
-            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 09:00–12:00)`,
+            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 08:00–13:00)`,
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
         };
     }
 
-    // 2) Aangescherpt: beoordeel nabijheid van laatste vloed vóór 10:00
+    // Regel 2) Aangescherpt: beoordeel nabijheid van laatste vloed vóór 10:30
     const windowStart = new Date(date);
-    windowStart.setHours(10, 0, 0, 0);
+    windowStart.setHours(10, 30, 0, 0);
     const highsBeforeWindow = highTides.filter(t => t.time <= windowStart).sort((a, b) => a.time - b.time);
     const lastHighBeforeWindow = highsBeforeWindow.length > 0 ? highsBeforeWindow[highsBeforeWindow.length - 1] : null;
     if (lastHighBeforeWindow) {
@@ -113,22 +109,13 @@ export function isRouteRideable(date, tides) {
             return {
                 rideable: false,
                 status: 'red',
-                reason: `Te dicht op vloed (${formatTime(lastHighBeforeWindow.time)}), minder dan 2 uur`,
+                reason: `Te dicht op vloed`,
                 lowTides: lowTides,
                 highTides: highTides,
                 allTides: allTides
             };
         }
-        if (hoursSinceHigh < 3) {
-            return {
-                rideable: false,
-                status: 'amber',
-                reason: `Recent vloed (${formatTime(lastHighBeforeWindow.time)}), ~${Math.round(hoursSinceHigh * 60)} min geleden`,
-                lowTides: lowTides,
-                highTides: highTides,
-                allTides: allTides
-            };
-        }
+
     }
 
     // Check 3 (fallback): Getijden-overlap met venster (10:00-12:00)
@@ -163,7 +150,7 @@ export function isRouteRideable(date, tides) {
         return {
             rideable: true,
             status: 'green',
-            reason: `Volledig venster binnen eb. Eb om ${formatTime(bestLowTide.time)}.`,
+            reason: `Het is eb genoeg`,
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
@@ -174,7 +161,7 @@ export function isRouteRideable(date, tides) {
         return {
             rideable: false,
             status: 'amber',
-            reason: `Gedeeltelijke overlap (${Math.round(bestOverlapMinutes)} min). Eb om ${formatTime(bestLowTide.time)}.`,
+            reason: `Het kan misschien`,
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
@@ -185,7 +172,7 @@ export function isRouteRideable(date, tides) {
         return {
             rideable: false,
             status: 'red',
-            reason: `Eb om ${formatTime(lowTides[0].time)} - venster valt buiten eb-periode`,
+            reason: `Het is te vloed`,
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
@@ -195,7 +182,7 @@ export function isRouteRideable(date, tides) {
     return {
         rideable: false,
         status: 'red',
-        reason: 'Geen getijdendata beschikbaar',
+        reason: 'Geen data beschikbaar',
         lowTides: [],
         highTides: [],
         allTides: []
