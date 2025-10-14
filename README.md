@@ -42,13 +42,27 @@ Voor het strandgedeelte (10:00-12:00) moet het eb zijn:
 - Je eigen veiligheid en conditie
 
 
-## Data Bronnen
+## Features
 
+### ✅ Getijden Data
 De applicatie gebruikt getijdendata van Rijkswaterstaat in CSV formaat:
 - Data bestanden bevinden zich in `public/data/`
 - Formaat: `YYYY.csv` (bijv. `2025.csv`, `2026.csv`)
 - De applicatie ondersteunt automatisch meerdere jaren
-- voor het meetpunt wordt IJmuiden buitenhaven gebruikt
+- Voor het meetpunt wordt IJmuiden buitenhaven gebruikt
+
+### 🌬️ Wind Data
+Real-time windgegevens voor Egmond aan Zee via Windy API:
+- Windroos visualisatie met windrichting en windkracht
+- Windsnelheid in km/h en Beaufort schaal
+- Windstoten informatie
+- Automatische updates elke 15 minuten
+
+**Configuratie**: Zie [WIND_DATA_GUIDE.md](WIND_DATA_GUIDE.md) voor setup instructies.
+
+## Data Bronnen
+
+### Getijden Data (Rijkswaterstaat)
 
 ### CSV Formaat
 ```
@@ -63,10 +77,10 @@ Datum;Nederlandsetijd;Hoogwater/laagwater;Waarde
 3. Geen code aanpassingen nodig
 
 ## Todo
-- [ ] Weer voorspelling integratie
-- [ ] Wind data (belangrijk voor strand)
+- [x] Wind data (belangrijk voor strand) ✅
 - [ ] Delen functionaliteit
 - [ ] PWA (Progressive Web App) support
+- [ ] SEO functionaliteit
 - [ ] H100 variant toevoegen
  
 
