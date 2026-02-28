@@ -80,18 +80,18 @@ export function isRouteRideable(date, tides) {
     }
 
     // Voorrangsregels gebruiker (aangescherpt):
-    // Regel 1) Groen als Eb valt tussen 08:00 en 13:00
+    // Regel 1) Groen als Eb valt tussen 08:00 en 15:00
     const nine = new Date(date);
     nine.setHours(8, 0, 0, 0);
     const twelve = new Date(date);
-    twelve.setHours(14, 0, 0, 0);
+    twelve.setHours(15, 0, 0, 0);
 
     const ebInMorningWindow = lowTides.find(t => t.time >= nine && t.time <= twelve);
     if (ebInMorningWindow) {
         return {
             rideable: true,
             status: 'green',
-            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 08:00–13:00)`,
+            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 08:00–15:00)`,
             lowTides: lowTides,
             highTides: highTides,
             allTides: allTides
@@ -122,13 +122,13 @@ export function isRouteRideable(date, tides) {
     const windowEnd = new Date(date);
     windowEnd.setHours(12, 0, 0, 0);
 
-    // Bepaal overlap met eb-venster (2 uur voor/na eb)
+    // Bepaal overlap met eb-venster (4 uur voor / 2 uur na eb)
     let bestOverlapMinutes = 0;
     let bestLowTide = null;
 
     for (let lowTide of lowTides) {
         const ebStart = new Date(lowTide.time);
-        ebStart.setHours(ebStart.getHours() - 2);
+        ebStart.setHours(ebStart.getHours() - 4);
         const ebEnd = new Date(lowTide.time);
         ebEnd.setHours(ebEnd.getHours() + 2);
 
@@ -143,10 +143,10 @@ export function isRouteRideable(date, tides) {
     }
 
     // Bepaal status op basis van overlap (fallback regels)
-    // - groen: volledige 120 minuten overlap
-    // - amber: tenminste 20 minuten maar minder dan 120 minuten
-    // - rood: minder dan 20 minuten of geen data
-    if (bestOverlapMinutes >= 120) {
+    // - groen: volledige 90 minuten overlap (heel rijvenster gedekt)
+    // - amber: tenminste 30 minuten maar minder dan 90 minuten
+    // - rood: minder dan 30 minuten of geen data
+    if (bestOverlapMinutes >= 90) {
         return {
             rideable: true,
             status: 'green',
@@ -157,7 +157,7 @@ export function isRouteRideable(date, tides) {
         };
     }
 
-    if (bestOverlapMinutes >= 20) {
+    if (bestOverlapMinutes >= 30) {
         return {
             rideable: false,
             status: 'amber',
