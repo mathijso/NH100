@@ -106,7 +106,7 @@
             <!-- Route Info met Afbeelding en Links -->
             <div class="mt-8 grid md:grid-cols-3 gap-6">
                 <!-- Route Afbeelding met Windroos -->
-                <div class="bg-stone-50 border border-stone-200 rounded-xl p-5 flex flex-col gap-5 col-span-2">
+                <div class="bg-stone-50 border border-stone-200 rounded-xl p-5 flex flex-col gap-5 md:col-span-2">
                     <!-- Route Afbeelding -->
                     <a href="https://www.komoot.com/nl-nl/tour/296286553" target="_blank" class="flex-1 flex items-center justify-center group">
                         <img src="{{ asset('images/nh100.png') }}" alt="NH100 Route"
