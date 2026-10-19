@@ -71,7 +71,7 @@
 
             <!-- Komend weekend -->
             <section class="mt-6" aria-labelledby="weekend-title">
-                <h2 id="weekend-title" class="text-xl md:text-2xl font-bold text-slate-900 mb-3">Komend weekend</h2>
+                <h2 id="weekend-title" class="text-xl md:text-2xl font-bold text-slate-900 mb-3" x-text="weekendTitle">Komend weekend</h2>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <template x-for="day in weekend" :key="day.date">
                         <button type="button" @click="open(day)"

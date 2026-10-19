@@ -65,9 +65,15 @@ export function planner({ days, today, weather }) {
             return days.filter(day => day.date >= today);
         },
 
-        // De eerstvolgende zaterdag en zondag (vandaag meegerekend)
+        // Het eerstvolgende weekend (vandaag meegerekend); op zondag alleen vandaag
         get weekend() {
-            return this.upcoming.filter(day => day.weekend).slice(0, 2);
+            const [first, second] = this.upcoming.filter(day => day.weekend);
+            if (!first) return [];
+            return parseDate(first.date).getDay() === 0 || !second ? [first] : [first, second];
+        },
+
+        get weekendTitle() {
+            return this.todayDay?.weekend ? 'Dit weekend' : 'Komend weekend';
         },
 
         // Eerste groene weekenddag ná de twee getoonde
