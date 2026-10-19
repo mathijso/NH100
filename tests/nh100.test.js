@@ -47,10 +47,8 @@ function run() {
         assert(res.status === 'green', 'Expected green for full overlap');
     }
 
-    // 2) Amber - partial overlap (~>20 and <120)
-    // Example from user: 2025-10-16 tides
-    // Vloed: 00:17, Eb: 08:24, Vloed: 12:50, Eb: 20:16
-    // 10:00-12:00 intersects Eb window (06:24-10:24) by ~24 min => amber
+    // 2) Groen - Eb om 08:24 valt sinds 28-02-2026 binnen 08:00–15:00
+    // Voorbeeld 2025-10-16: Vloed 00:17, Eb 08:24, Vloed 12:50, Eb 20:16
     {
         const date = new Date(2025, 9, 16); // 16 Oct 2025
         const tides = buildTidesForTest(
@@ -62,7 +60,36 @@ function run() {
             ])
         );
         const res = isRouteRideable(date, tides);
-        assert(res.status === 'amber', 'Expected amber for partial overlap on 2025-10-16');
+        assert(res.status === 'green', 'Expected green for Eb at 08:24 on 2025-10-16');
+    }
+
+    // 2b) Amber - Eb 15:30: eb-venster (4u voor / 2u na) overlapt 10:30–12:00 maar 30 minuten
+    {
+        const date = new Date(2025, 10, 4);
+        const tides = buildTidesForTest(
+            buildDayTides('2025-11-04', [
+                ['Eb', '03:00'],
+                ['Vloed', '07:30'],
+                ['Eb', '15:30'],
+                ['Vloed', '20:00'],
+            ])
+        );
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'amber', 'Expected amber for 30 min overlap');
+    }
+
+    // 2c) Rood - geen getijdendata in de winter
+    {
+        const res = isRouteRideable(new Date(2025, 10, 5), []);
+        assert(res.status === 'red' && res.reason === 'Geen data beschikbaar', 'Expected red without data');
+    }
+
+    // 2d) Rood - zomer, ongeacht getij
+    {
+        const date = new Date(2025, 6, 1);
+        const tides = buildTidesForTest(buildDayTides('2025-07-01', [['Eb', '10:30']]));
+        const res = isRouteRideable(date, tides);
+        assert(res.status === 'red', 'Expected red in summer season');
     }
 
     // 3) Red - negligible overlap (<20 min)
@@ -75,7 +102,7 @@ function run() {
         assert(res.status === 'red', 'Expected red for no/low overlap');
     }
 
-    // 4) Green - eb between 09:00 and 12:00
+    // 4) Green - eb between 08:00 and 15:00
     {
         const date = new Date(2025, 9, 20);
         const tides = buildTidesForTest(
@@ -87,10 +114,10 @@ function run() {
             ])
         );
         const res = isRouteRideable(date, tides);
-        assert(res.status === 'green', 'Expected green when Eb is between 09:00–12:00');
+        assert(res.status === 'green', 'Expected green when Eb is between 08:00–15:00');
     }
 
-    // 5) Amber/Red near recent Vloed before 10:00
+    // 5) Groen - Eb 14:59 valt binnen 08:00–15:00 (vóór 28-02-2026 was dit amber/rood)
     {
         const date = new Date(2025, 9, 11); // example like user: Vloed 07:09
         const tides = buildTidesForTest(
@@ -102,7 +129,7 @@ function run() {
             ])
         );
         const res = isRouteRideable(date, tides);
-        assert(res.status === 'amber' || res.status === 'red', 'Expected amber/red when recent Vloed before window');
+        assert(res.status === 'green', 'Expected green when Eb at 14:59');
     }
 
     // 6) Red when very recent Vloed (e.g., ~08:50 → <2h before 10:00)

@@ -189,72 +189,6 @@ export function isRouteRideable(date, tides) {
     };
 }
 
-// Genereer gesimuleerde getijden data
-export function generateSimulatedTides() {
-    const tides = [];
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    for (let day = 0; day < 35; day++) {
-        const currentDate = new Date(now);
-        currentDate.setDate(now.getDate() + day);
-
-        const timeShift = day * 50; // minuten shift per dag
-
-        // Eerste eb
-        const tide1 = new Date(currentDate);
-        tide1.setHours(6, 0 + timeShift % 60, 0);
-        tide1.setHours(tide1.getHours() + Math.floor(timeShift / 60));
-
-        // Tweede eb (ongeveer 12.5 uur later)
-        const tide2 = new Date(currentDate);
-        tide2.setHours(18, 30 + timeShift % 60, 0);
-        tide2.setHours(tide2.getHours() + Math.floor(timeShift / 60));
-
-        tides.push({
-            time: tide1.toISOString(),
-            type: 'Low',
-            height: 0.3 + Math.random() * 0.2
-        });
-
-        tides.push({
-            time: tide2.toISOString(),
-            type: 'Low',
-            height: 0.3 + Math.random() * 0.2
-        });
-
-        // Hoog water tussen de eb tijden
-        const high1 = new Date(currentDate);
-        high1.setHours(0, 0 + timeShift % 60, 0);
-        high1.setHours(high1.getHours() + Math.floor(timeShift / 60));
-
-        const high2 = new Date(currentDate);
-        high2.setHours(12, 30 + timeShift % 60, 0);
-        high2.setHours(high2.getHours() + Math.floor(timeShift / 60));
-
-        tides.push({
-            time: high1.toISOString(),
-            type: 'High',
-            height: 1.8 + Math.random() * 0.4
-        });
-
-        tides.push({
-            time: high2.toISOString(),
-            type: 'High',
-            height: 1.8 + Math.random() * 0.4
-        });
-    }
-
-    return tides.sort((a, b) => new Date(a.time) - new Date(b.time));
-}
-
-// Fetch getijden data (voor nu gesimuleerd, maar kan later echte API gebruiken)
-export async function fetchTideData() {
-    // TODO: In de toekomst kunnen we hier een echte API aanroepen
-    // via een Laravel backend endpoint die Livewire gebruikt
-    return generateSimulatedTides();
-}
-
 // Export alle functies als window object voor gebruik in Alpine components
 if (typeof window !== 'undefined') {
     window.NH100 = {
@@ -265,9 +199,7 @@ if (typeof window !== 'undefined') {
         getDayOfWeek,
         isWinterSeason,
         getTidesForDay,
-        isRouteRideable,
-        generateSimulatedTides,
-        fetchTideData
+        isRouteRideable
     };
 }
 
