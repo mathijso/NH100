@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 
 class TideDataService
 {
+    public const TIMEZONE = 'Europe/Amsterdam';
+
     private string $dataPath;
 
     public function __construct()
@@ -15,24 +17,28 @@ class TideDataService
     }
 
     /**
-     * Alle getijden uit alle jaarbestanden, chronologisch.
+     * Alle getijden uit alle jaarbestanden, gegroepeerd per lokale datum (Y-m-d)
+     * en per dag chronologisch.
      *
-     * Bevat alleen wat de frontend gebruikt (tijd en HW/LW), de pagina
-     * krijgt deze lijst inline mee en die moet klein blijven.
-     *
-     * @return list<array{time: string, type: 'High'|'Low'}>
+     * @return array<string, list<array{time: CarbonImmutable, type: 'High'|'Low', height_cm: int}>>
      */
-    public function getAllTides(): array
+    public function getTidesByDate(): array
     {
-        $tides = [];
+        $byDate = [];
 
         foreach ($this->getAvailableYears() as $year) {
-            array_push($tides, ...$this->parseCsvFile("{$this->dataPath}/{$year}.csv"));
+            foreach ($this->parseCsvFile("{$this->dataPath}/{$year}.csv") as $tide) {
+                $byDate[$tide['time']->format('Y-m-d')][] = $tide;
+            }
         }
 
-        usort($tides, fn ($a, $b) => strcmp($a['time'], $b['time']));
+        foreach ($byDate as &$tides) {
+            usort($tides, fn ($a, $b) => $a['time'] <=> $b['time']);
+        }
 
-        return $tides;
+        ksort($byDate);
+
+        return $byDate;
     }
 
     /**
@@ -83,7 +89,7 @@ class TideDataService
             }
 
             try {
-                $dateTime = Carbon::createFromFormat('d/m/Y H:i', trim($row[0]).' '.trim($row[1]), 'Europe/Amsterdam');
+                $dateTime = CarbonImmutable::createFromFormat('!d/m/Y H:i', trim($row[0]).' '.trim($row[1]), self::TIMEZONE);
             } catch (\Exception $e) {
                 Log::warning('Could not parse tide row', ['row' => $row, 'error' => $e->getMessage()]);
 
@@ -91,9 +97,9 @@ class TideDataService
             }
 
             $tides[] = [
-                // UTC, zodat strcmp-sortering klopt over zomer- en wintertijd heen
-                'time' => $dateTime->utc()->format('Y-m-d\TH:i\Z'),
+                'time' => $dateTime,
                 'type' => $type === 'HW' ? 'High' : 'Low',
+                'height_cm' => (int) filter_var($row[3], FILTER_SANITIZE_NUMBER_INT),
             ];
         }
 

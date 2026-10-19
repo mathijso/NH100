@@ -1,6 +1,8 @@
 import Alpine from 'alpinejs';
-import './nh100';
+import { planner } from './nh100';
 
 window.Alpine = Alpine;
+
+Alpine.data('planner', planner);
 
 Alpine.start();

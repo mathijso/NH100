@@ -15,93 +15,116 @@ class WindDataService
 
     private const EGMOND_LON = 4.61718;
 
+    // Het strand rijd je van Wijk aan Zee naar Bergen aan Zee, ongeveer richting NNO
+    private const BEACH_HEADING = 10;
+
+    // Midden van het strandvenster 10:30-12:00
+    private const FORECAST_HOUR = '11:00';
+
     /**
-     * Haal actuele weergegevens op voor Egmond aan Zee
+     * Actuele omstandigheden plus de wind om 11:00 voor de komende 16 dagen.
+     *
+     * @return array{current: ?array, days: array<string, array>}
      */
-    public function getCurrentWindData(): ?array
+    public function getWeather(): array
     {
-        // Cache voor 15 minuten
-        return Cache::remember('wind_data_egmond', 900, function () {
+        $empty = ['current' => null, 'days' => []];
+
+        // Cache voor 15 minuten; nieuwe key sinds de verwachting erbij kwam
+        return Cache::remember('weather_egmond_v2', 900, function () use ($empty) {
             try {
                 $response = Http::timeout(5)->get(self::API_URL, [
                     'latitude' => self::EGMOND_LAT,
                     'longitude' => self::EGMOND_LON,
-                    'daily' => 'sunrise',
                     'current' => 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
-                    'timezone' => 'auto',
-                    'forecast_days' => 1,
+                    'hourly' => 'wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+                    'daily' => 'sunrise',
+                    'timezone' => 'Europe/Amsterdam',
+                    'forecast_days' => 16,
                 ]);
 
                 if ($response->successful()) {
-                    $data = $response->json();
-
-                    return $this->processWindData($data);
+                    return $this->process($response->json());
                 }
 
                 Log::error('Open-Meteo API error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-
-                return null;
             } catch (\Exception $e) {
-                Log::error('Error fetching weather data', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-
-                return null;
+                Log::error('Error fetching weather data', ['message' => $e->getMessage()]);
             }
+
+            return $empty;
         });
     }
 
-    /**
-     * Verwerk de ruwe weergegevens naar een bruikbaar formaat
-     */
-    private function processWindData(array $data): ?array
+    private function process(array $data): array
     {
-        if (! isset($data['current'])) {
-            return null;
+        $current = null;
+
+        if (isset($data['current']['wind_speed_10m'], $data['current']['wind_direction_10m'])) {
+            $c = $data['current'];
+            $current = [
+                ...$this->wind($c['wind_speed_10m'], $c['wind_direction_10m'], $c['wind_gusts_10m'] ?? null),
+                'temperature' => isset($c['temperature_2m']) ? round($c['temperature_2m'], 1) : null,
+                'sunrise' => $data['daily']['sunrise'][0] ?? null,
+            ];
         }
 
-        $current = $data['current'];
-        $daily = $data['daily'] ?? [];
+        $days = [];
+        $hourly = $data['hourly'] ?? [];
 
-        $windSpeedKmh = $current['wind_speed_10m'] ?? null;
-        $windDirection = $current['wind_direction_10m'] ?? null;
-        $gustKmh = $current['wind_gusts_10m'] ?? null;
-        $temperature = $current['temperature_2m'] ?? null;
-        $sunrise = $daily['sunrise'][0] ?? null;
+        foreach ($hourly['time'] ?? [] as $i => $time) {
+            if (! str_ends_with($time, 'T'.self::FORECAST_HOUR)) {
+                continue;
+            }
 
-        if ($windSpeedKmh === null || $windDirection === null) {
-            return null;
+            $speed = $hourly['wind_speed_10m'][$i] ?? null;
+            $direction = $hourly['wind_direction_10m'][$i] ?? null;
+
+            if ($speed === null || $direction === null) {
+                continue;
+            }
+
+            $days[substr($time, 0, 10)] = $this->wind($speed, $direction, $hourly['wind_gusts_10m'][$i] ?? null);
         }
 
-        $windDirectionText = $this->getWindDirectionText($windDirection);
+        return ['current' => $current, 'days' => $days];
+    }
 
-        // Converteer km/h naar m/s voor Beaufort berekening
-        $windSpeedMs = $windSpeedKmh / 3.6;
-        $beaufort = $this->calculateBeaufort($windSpeedMs);
-
+    private function wind(float $speedKmh, float $direction, ?float $gustKmh): array
+    {
         return [
-            'speed_ms' => round($windSpeedMs, 1),
-            'speed_kmh' => round($windSpeedKmh, 1),
-            'direction_degrees' => round($windDirection),
-            'direction_text' => $windDirectionText,
-            'beaufort' => $beaufort,
-            'gust_ms' => $gustKmh ? round($gustKmh / 3.6, 1) : null,
-            'gust_kmh' => $gustKmh ? round($gustKmh, 1) : null,
-            'temperature' => $temperature ? round($temperature, 1) : null,
-            'sunrise' => $sunrise,
-            'timestamp' => $current['time'] ?? null,
-            'location' => 'Egmond aan Zee',
+            'kmh' => (int) round($speedKmh),
+            'gust_kmh' => $gustKmh !== null ? (int) round($gustKmh) : null,
+            'degrees' => (int) round($direction),
+            'direction' => $this->directionText($direction),
+            'beaufort' => $this->beaufort($speedKmh / 3.6),
+            'effect' => $this->beachEffect($speedKmh, $direction),
         ];
     }
 
     /**
-     * Converteer graden naar windrichting tekst
+     * Wat de wind op het strand doet. Windrichting is waar hij vandaan komt,
+     * dus wind uit het noorden is tegenwind op weg naar Bergen.
      */
-    private function getWindDirectionText(float $degrees): string
+    private function beachEffect(float $speedKmh, float $direction): ?string
+    {
+        if ($speedKmh < 12) {
+            return null;
+        }
+
+        $angle = abs(fmod($direction - self::BEACH_HEADING + 540, 360) - 180);
+
+        return match (true) {
+            $angle <= 45 => 'tegenwind',
+            $angle >= 135 => 'rugwind',
+            default => 'zijwind',
+        };
+    }
+
+    private function directionText(float $degrees): string
     {
         $directions = [
             'N', 'NNO', 'NO', 'ONO',
@@ -110,51 +133,17 @@ class WindDataService
             'W', 'WNW', 'NW', 'NNW',
         ];
 
-        $index = round($degrees / 22.5) % 16;
-
-        return $directions[$index];
+        return $directions[(int) round($degrees / 22.5) % 16];
     }
 
-    /**
-     * Bereken Beaufort schaal uit windsnelheid (m/s)
-     */
-    private function calculateBeaufort(float $speedMs): int
+    private function beaufort(float $speedMs): int
     {
-        if ($speedMs < 0.3) {
-            return 0;
-        }
-        if ($speedMs < 1.6) {
-            return 1;
-        }
-        if ($speedMs < 3.4) {
-            return 2;
-        }
-        if ($speedMs < 5.5) {
-            return 3;
-        }
-        if ($speedMs < 8.0) {
-            return 4;
-        }
-        if ($speedMs < 10.8) {
-            return 5;
-        }
-        if ($speedMs < 13.9) {
-            return 6;
-        }
-        if ($speedMs < 17.2) {
-            return 7;
-        }
-        if ($speedMs < 20.8) {
-            return 8;
-        }
-        if ($speedMs < 24.5) {
-            return 9;
-        }
-        if ($speedMs < 28.5) {
-            return 10;
-        }
-        if ($speedMs < 32.7) {
-            return 11;
+        $limits = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7];
+
+        foreach ($limits as $bft => $limit) {
+            if ($speedMs < $limit) {
+                return $bft;
+            }
         }
 
         return 12;
