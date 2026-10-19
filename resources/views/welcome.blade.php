@@ -4,18 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title x-data="todayStatus"
-        x-text="loading ? 'NH100 Route Planner' : (result ? (result.rideable ? 'NH100 Route Planner - Route berijdbaar vandaag' : 'NH100 Route Planner - Route niet geschikt vandaag') : 'NH100 Route Planner')"
-        x-init="init()">NH100 Route Planner</title>
+    <title>NH100 Route Planner</title>
+    <meta name="description" content="Wanneer is de NH100 offroad route door het Noordhollands Duinreservaat berijdbaar? Getijden, seizoen en wind in één overzicht.">
 
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/nh100.js'])
-    @livewireStyles
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body class="bg-neutral-50 min-h-screen">
-    @livewire('tide-data')
-    @livewire('wind-data')
-
     <div class="container mx-auto px-4 py-6 md:py-10 max-w-7xl">
         <!-- Header -->
         <div class="bg-white border border-stone-200 rounded-xl shadow-sm p-6 md:p-8 mb-6 animate-fadeIn">
@@ -533,17 +528,18 @@
         <!-- Footer -->
         <footer class="mt-12 pt-8 border-t border-stone-200">
             <div class="text-center text-slate-600 text-sm">
-                <p>© 2025 NH100 Route Planner</p>
+                <p>© {{ now()->year }} NH100 Route Planner</p>
                 <p class="mt-1">Ontwikkeld door <a href="https://oggel-codelabs.nl" target="_blank"
                         class="text-amber-700 hover:text-amber-800 font-medium underline decoration-2">Oggel Codelabs</a></p>
             </div>
         </footer>
     </div>
 
-    @livewireScripts
-
     <script>
-        // Alpine.js components
+        // Data komt inline mee; app.js (type=module) start Alpine pas na dit script
+        window.tidesData = @json($tides);
+        window.windData = @json($windData);
+
         document.addEventListener('alpine:init', () => {
             // Wind Rose Component
             Alpine.data('windRose', () => ({
@@ -551,57 +547,9 @@
                 windData: null,
                 error: null,
 
-                async init() {
-                    console.log('🌤️ Wind Rose component initializing...');
-                    
-                    // Listen for wind updates
-                    window.addEventListener('wind-updated', (event) => {
-                        console.log('🌤️ Received wind-updated event:', event.detail.windData);
-                        this.windData = event.detail.windData;
-                        this.loading = false;
-                        this.error = null;
-                    });
-
-                    // Load data
-                    await this.loadWindData();
-                },
-
-                async loadWindData() {
-                    // First check if data is immediately available
-                    if (window.windData && typeof window.windData === 'object' && window.windData.speed_kmh) {
-                        console.log('🌤️ Weather data immediately available:', window.windData);
-                        this.windData = window.windData;
-                        this.loading = false;
-                        this.error = null;
-                        return;
-                    }
-
-                    // Wait for data with shorter intervals
-                    console.log('🌤️ Waiting for weather data...');
-                    const maxAttempts = 50;
-                    let attempts = 0;
-
-                    while ((!window.windData || typeof window.windData !== 'object' || !window.windData.speed_kmh) && attempts < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                        attempts++;
-
-                        if (attempts % 10 === 0) {
-                            console.log(`🌤️ Still waiting for weather data... (attempt ${attempts}/${maxAttempts})`);
-                        }
-
-                        // Check again
-                        if (window.windData && typeof window.windData === 'object' && window.windData.speed_kmh) {
-                            console.log('🌤️ Weather data loaded after waiting:', window.windData);
-                            this.windData = window.windData;
-                            this.loading = false;
-                            this.error = null;
-                            return;
-                        }
-                    }
-
-                    // If we get here, data is not available
-                    console.error('🌤️ Weather data not available after waiting');
-                    this.error = 'Weergegevens niet beschikbaar';
+                init() {
+                    this.windData = window.windData;
+                    this.error = this.windData ? null : 'Weergegevens niet beschikbaar';
                     this.loading = false;
                 },
 
@@ -626,53 +574,17 @@
                 loading: true,
                 result: null,
 
-                async init() {
-                    // Wait for tides data from Livewire
-                    await this.loadTides();
-
-                    // Listen for tide updates
-                    window.addEventListener('tides-updated', (event) => {
-                        this.calculateToday(event.detail.tides);
-                    });
-                },
-
-                async loadTides() {
-                    // Check if data is already available
-                    if (window.tidesData && window.tidesData.length > 0) {
-                        console.log('Tides already available:', window.tidesData.length);
-                        this.calculateToday(window.tidesData);
-                        return;
-                    }
-
-                    // Wait a bit for Livewire to load
-                    const maxAttempts = 30;
-                    let attempts = 0;
-
-                    while ((!window.tidesData || window.tidesData.length === 0) && attempts <
-                        maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-
-                        if (attempts % 10 === 0) {
-                            console.log('Waiting for tides...', attempts);
-                        }
-                    }
-
-                    if (window.tidesData && window.tidesData.length > 0) {
-                        console.log('Tides loaded after waiting:', window.tidesData.length);
-                        this.calculateToday(window.tidesData);
-                    } else {
-                        console.log('Falling back to simulated data');
-                        // Fallback to simulated data
-                        const tides = window.NH100.generateSimulatedTides();
-                        this.calculateToday(tides);
-                    }
+                init() {
+                    this.calculateToday(window.tidesData || []);
                 },
 
                 calculateToday(tides) {
                     const today = new Date();
                     this.result = window.NH100.isRouteRideable(today, tides);
                     this.loading = false;
+                    document.title = this.result.status === 'green'
+                        ? 'NH100 Route Planner - Route berijdbaar vandaag'
+                        : (this.result.status === 'amber' ? 'NH100 Route Planner - Route mogelijk berijdbaar' : 'NH100 Route Planner - Route niet geschikt vandaag');
                 },
 
                 formatTime(time) {
@@ -686,7 +598,7 @@
                 days: [],
                 firstDayOfWeek: 0,
                 currentDate: new Date(),
-                maxDays: 450, // ~15 maanden vooruit om alle beschikbare CSV data te tonen
+                maxDays: 450, // ~15 maanden vooruit
 
                 get currentMonthYear() {
                     const monthNames = [
@@ -703,63 +615,22 @@
                     return this.days.filter(day => day.daysFromToday >= 0);
                 },
 
-                async init() {
-                    // Wait for tides data from Livewire
-                    await this.loadTides();
-
-                    // Listen for tide updates
-                    window.addEventListener('tides-updated', (event) => {
-                        this.calculateDays(event.detail.tides);
-                    });
+                init() {
+                    this.calculateDays(window.tidesData || []);
                 },
 
                 previousMonth() {
                     const newDate = new Date(this.currentDate);
                     newDate.setMonth(newDate.getMonth() - 1);
                     this.currentDate = newDate;
-                    console.log('Previous month:', this.currentMonthYear);
-                    this.calculateDays(window.tidesData);
+                    this.calculateDays(window.tidesData || []);
                 },
 
                 nextMonth() {
                     const newDate = new Date(this.currentDate);
                     newDate.setMonth(newDate.getMonth() + 1);
                     this.currentDate = newDate;
-                    console.log('Next month:', this.currentMonthYear);
-                    this.calculateDays(window.tidesData);
-                },
-
-                async loadTides() {
-                    // Check if data is already available
-                    if (window.tidesData && window.tidesData.length > 0) {
-                        console.log('Calendar: Tides already available:', window.tidesData.length);
-                        this.calculateDays(window.tidesData);
-                        return;
-                    }
-
-                    // Wait for Livewire to load real API data
-                    const maxAttempts = 50; // Increased attempts for API data
-                    let attempts = 0;
-
-                    while ((!window.tidesData || window.tidesData.length === 0) && attempts <
-                        maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                        attempts++;
-
-                        if (attempts % 10 === 0) {
-                            console.log('Calendar: Waiting for API tides...', attempts);
-                        }
-                    }
-
-                    if (window.tidesData && window.tidesData.length > 0) {
-                        console.log('Calendar: API tides loaded:', window.tidesData.length);
-                        this.calculateDays(window.tidesData);
-                    } else {
-                        console.log('Calendar: No API data available, using simulated data');
-                        // Only use simulated data as last resort
-                        const tides = window.NH100.generateSimulatedTides();
-                        this.calculateDays(tides);
-                    }
+                    this.calculateDays(window.tidesData || []);
                 },
 
                 calculateDays(tides) {
@@ -769,6 +640,8 @@
                     // Start from geselecteerde maand (eerste dag van de maand) zodat ook verleden zichtbaar is
                     const firstDayOfMonth = new Date(this.currentDate);
                     firstDayOfMonth.setDate(1);
+                    // Zonder dit valt de laatste dag van de maand weg (tijd van nu > 00:00)
+                    firstDayOfMonth.setHours(0, 0, 0, 0);
 
                     // Bepaal eerste weekdag voor de eerste dag van de maand (maandag = 0, zondag = 6)
                     const dayOfWeek = firstDayOfMonth.getDay();
@@ -782,7 +655,7 @@
                     // Loop door alle dagen van de maand, inclusief verleden
                     let currentDate = new Date(firstDayOfMonth);
                     while (currentDate <= lastDayOfMonth) {
-                        const daysFromToday = Math.floor((currentDate - today) / (1000 * 60 * 60 * 24));
+                        const daysFromToday = Math.round((currentDate - today) / (1000 * 60 * 60 * 24)); // round: zomertijd-overgang
 
                         // Only add if within maxDays limit
                         if (daysFromToday <= this.maxDays) {

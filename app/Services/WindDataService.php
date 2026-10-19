@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class WindDataService
 {
     private const API_URL = 'https://api.open-meteo.com/v1/forecast';
-    
+
     // Egmond aan Zee coördinaten: 52°37'02.6"N 4°37'04.7"E
     private const EGMOND_LAT = 52.624449;
+
     private const EGMOND_LON = 4.61718;
 
     /**
@@ -22,7 +23,7 @@ class WindDataService
         // Cache voor 15 minuten
         return Cache::remember('wind_data_egmond', 900, function () {
             try {
-                $response = Http::timeout(10)->get(self::API_URL, [
+                $response = Http::timeout(5)->get(self::API_URL, [
                     'latitude' => self::EGMOND_LAT,
                     'longitude' => self::EGMOND_LON,
                     'daily' => 'sunrise',
@@ -33,6 +34,7 @@ class WindDataService
 
                 if ($response->successful()) {
                     $data = $response->json();
+
                     return $this->processWindData($data);
                 }
 
@@ -47,6 +49,7 @@ class WindDataService
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
+
                 return null;
             }
         });
@@ -57,13 +60,13 @@ class WindDataService
      */
     private function processWindData(array $data): ?array
     {
-        if (!isset($data['current'])) {
+        if (! isset($data['current'])) {
             return null;
         }
 
         $current = $data['current'];
         $daily = $data['daily'] ?? [];
-        
+
         $windSpeedKmh = $current['wind_speed_10m'] ?? null;
         $windDirection = $current['wind_direction_10m'] ?? null;
         $gustKmh = $current['wind_gusts_10m'] ?? null;
@@ -75,7 +78,7 @@ class WindDataService
         }
 
         $windDirectionText = $this->getWindDirectionText($windDirection);
-        
+
         // Converteer km/h naar m/s voor Beaufort berekening
         $windSpeedMs = $windSpeedKmh / 3.6;
         $beaufort = $this->calculateBeaufort($windSpeedMs);
@@ -104,10 +107,11 @@ class WindDataService
             'N', 'NNO', 'NO', 'ONO',
             'O', 'OZO', 'ZO', 'ZZO',
             'Z', 'ZZW', 'ZW', 'WZW',
-            'W', 'WNW', 'NW', 'NNW'
+            'W', 'WNW', 'NW', 'NNW',
         ];
-        
+
         $index = round($degrees / 22.5) % 16;
+
         return $directions[$index];
     }
 
@@ -116,19 +120,43 @@ class WindDataService
      */
     private function calculateBeaufort(float $speedMs): int
     {
-        if ($speedMs < 0.3) return 0;
-        if ($speedMs < 1.6) return 1;
-        if ($speedMs < 3.4) return 2;
-        if ($speedMs < 5.5) return 3;
-        if ($speedMs < 8.0) return 4;
-        if ($speedMs < 10.8) return 5;
-        if ($speedMs < 13.9) return 6;
-        if ($speedMs < 17.2) return 7;
-        if ($speedMs < 20.8) return 8;
-        if ($speedMs < 24.5) return 9;
-        if ($speedMs < 28.5) return 10;
-        if ($speedMs < 32.7) return 11;
+        if ($speedMs < 0.3) {
+            return 0;
+        }
+        if ($speedMs < 1.6) {
+            return 1;
+        }
+        if ($speedMs < 3.4) {
+            return 2;
+        }
+        if ($speedMs < 5.5) {
+            return 3;
+        }
+        if ($speedMs < 8.0) {
+            return 4;
+        }
+        if ($speedMs < 10.8) {
+            return 5;
+        }
+        if ($speedMs < 13.9) {
+            return 6;
+        }
+        if ($speedMs < 17.2) {
+            return 7;
+        }
+        if ($speedMs < 20.8) {
+            return 8;
+        }
+        if ($speedMs < 24.5) {
+            return 9;
+        }
+        if ($speedMs < 28.5) {
+            return 10;
+        }
+        if ($speedMs < 32.7) {
+            return 11;
+        }
+
         return 12;
     }
 }
-

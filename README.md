@@ -11,27 +11,19 @@ De NH100 is een 100km offroad trainingsroute door:
 
 ## Restricties
 
-De route heeft strikte voorwaarden:
-
-### Seizoen Restricties
-- **1 oktober - 1 mei (winter)**: Strand hele dag toegankelijk
-- **1 mei - 1 oktober (zomer)**: Strand alleen voor 10:00 uur toegankelijk
-
-### Tijdsrestricties
-- **07:00**: Aanbevolen starttijd
-- **10:30**: Uiterste tijd om uit duinreservaat te zijn
-- **10:00-12:00**: Strandgedeelte fietsen
-
-### Getijden Vereisten
-Voor het strandgedeelte (10:00-12:00) moet het eb zijn:
-- Maximaal 2 uur vóór eb
-- Maximaal 2 uur ná eb
-- Eb tijd tussen 8:00 en 14:00 ideaal
-
-### Overig
+- **1 oktober - 1 mei (winter)**: strand hele dag toegankelijk
+- **1 mei - 1 oktober (zomer)**: strand alleen voor 10:00 uur toegankelijk, de planner geeft dan altijd rood
+- Je moet voor **10:30** uit het duinreservaat zijn, het strandgedeelte rijd je tussen 10:30 en 12:00
 - Duinkaart verplicht (€2,00 per dag)
-- Controleer altijd actuele weersomstandigheden
 
+## Zo beoordeelt de planner een winterdag
+
+Zie `isRouteRideable()` in `resources/js/nh100.js`. In volgorde:
+
+1. **Groen** als er een laagwater (eb) valt tussen 08:00 en 15:00.
+2. **Rood** ("Te dicht op vloed") als het laatste hoogwater vóór 10:30 minder dan 2 uur eerder was.
+3. Anders telt de overlap tussen het strandvenster (10:30-12:00) en het eb-venster (4 uur voor tot 2 uur na laagwater): 90 minuten is **groen**, 30 tot 90 minuten **oranje**, minder **rood**.
+4. Zonder getijdendata voor die dag: **rood** ("Geen data beschikbaar").
 
 ## Waarschuwing
 
@@ -42,42 +34,31 @@ Voor het strandgedeelte (10:00-12:00) moet het eb zijn:
 - Je eigen veiligheid en conditie
 
 
-## Features
+## Data
 
-### ✅ Getijden Data
-De applicatie gebruikt getijdendata van Rijkswaterstaat in CSV formaat:
-- Data bestanden bevinden zich in `public/data/`
-- Formaat: `YYYY.csv` (bijv. `2025.csv`, `2026.csv`)
-- De applicatie ondersteunt automatisch meerdere jaren
-- Voor het meetpunt wordt IJmuiden buitenhaven gebruikt
+### Getijden
+Astronomische hoog- en laagwatertijden van IJmuiden buitenhaven, van Rijkswaterstaat. Per jaar één CSV in `public/data/YYYY.csv`; alle jaren in die map worden automatisch ingeladen.
 
-### 🌬️ Wind Data
-Real-time windgegevens voor Egmond aan Zee via Windy API:
-- Windroos visualisatie met windrichting en windkracht
-- Windsnelheid in km/h en Beaufort schaal
-- Windstoten informatie
-- Automatische updates elke 15 minuten
+Nieuw jaar toevoegen (Rijkswaterstaat publiceert het volgende jaar meestal in het najaar):
 
-**Configuratie**: Zie [WIND_DATA_GUIDE.md](WIND_DATA_GUIDE.md) voor setup instructies.
-
-## Data Bronnen
-
-### Getijden Data (Rijkswaterstaat)
-
-### CSV Formaat
-```
-Datum;Nederlandsetijd;Hoogwater/laagwater;Waarde
-30/12/2025;19:28;LW;-67 cm
-30/12/2025;11:36;HW;84 cm
+```bash
+php artisan tides:fetch 2028
 ```
 
-### Nieuw jaar toevoegen
-1. Plaats nieuw CSV bestand in `public/data/` met naam `YYYY.csv`
-2. De applicatie herkent automatisch nieuwe jaren
-3. Geen code aanpassingen nodig
+Details over bron en formaat: [TIDE_DATA_GUIDE.md](TIDE_DATA_GUIDE.md).
+
+### Weer
+Actuele temperatuur, wind en zonsopgang voor Egmond aan Zee via [Open-Meteo](https://open-meteo.com) (geen API-key nodig), 15 minuten gecachet in `WindDataService`.
+
+## Deploy
+Draait op hetzner-main onder `/var/www/html/mathijsoggel.nl/nh100` (Apache-alias `/nh100`, gebruiker `web-mathijsoggel`):
+
+```bash
+sudo -u web-mathijsoggel bash -c 'cd /var/www/html/mathijsoggel.nl/nh100 && git pull && composer install --no-dev -o && npm ci && npm run build && php artisan optimize'
+```
 
 ## Todo
-- [x] Wind data (belangrijk voor strand) ✅
+- [x] Wind data (belangrijk voor strand)
 - [ ] Delen functionaliteit
 - [ ] PWA (Progressive Web App) support
 - [ ] SEO functionaliteit
