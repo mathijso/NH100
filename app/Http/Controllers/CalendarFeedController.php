@@ -43,7 +43,7 @@ class CalendarFeedController extends Controller
                 $date = CarbonImmutable::parse($day['date']);
                 $tides = implode(', ', array_map(fn ($t) => "{$t['type']} {$t['time']}", $day['tides']));
                 $description = "{$day['reason']}.\\nGetijden: {$tides}.\\nZon op: {$day['sunrise']}. Strand tussen 10:30 en 12:00.\\n"
-                    .url('/');
+                    .url('/').'/';
 
                 array_push($lines,
                     'BEGIN:VEVENT',
@@ -53,7 +53,7 @@ class CalendarFeedController extends Controller
                     'DTEND;VALUE=DATE:'.$date->addDay()->format('Ymd'),
                     'SUMMARY:'.($day['extra_low'] ? 'NH100 berijdbaar, extra laag water' : 'NH100 berijdbaar'),
                     'DESCRIPTION:'.$this->escape($description),
-                    'URL:'.url('/'),
+                    'URL:'.url('/').'/',
                     'TRANSP:TRANSPARENT',
                     'END:VEVENT',
                 );
