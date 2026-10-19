@@ -49,7 +49,11 @@ class FetchTideData extends Command
             return self::FAILURE;
         }
 
-        $rows = $this->toRows($measurements, $year);
+        $rows = $this->toRows($measurements, $year, $skipped);
+
+        if ($skipped > 0) {
+            $this->warn("{$skipped} extremen overgeslagen omdat ze even hoog waren als een buur (geen HW/LW te bepalen).");
+        }
 
         if (count($rows) < 1300) {
             $this->error('Onverwacht weinig getijden ('.count($rows)."), {$year} is waarschijnlijk nog niet (volledig) gepubliceerd.");
@@ -78,8 +82,9 @@ class FetchTideData extends Command
      *
      * @return list<string>
      */
-    private function toRows(array $measurements, int $year): array
+    private function toRows(array $measurements, int $year, ?int &$skipped = 0): array
     {
+        $skipped = 0;
         $points = collect($measurements)
             ->map(fn (array $m) => [
                 'time' => CarbonImmutable::parse($m['Tijdstip'])->setTimezone(self::TIMEZONE),
@@ -105,6 +110,8 @@ class FetchTideData extends Command
             };
 
             if ($type === null) {
+                $skipped++;
+
                 continue;
             }
 
