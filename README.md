@@ -1,6 +1,8 @@
 # NH100 Route Planner 🚴‍♂️
 
-Een moderne webapplicatie om te bepalen wanneer de NH100 offroad route in Noord-Holland berijdbaar is, rekening houdend met getijden en seizoensrestricties.
+Een webapplicatie om te bepalen wanneer de NH100 offroad route in Noord-Holland berijdbaar is, op basis van getij, seizoen en wind, met de weekenden voorop.
+
+Live: https://mathijsoggel.nl/nh100/
 
 ## Over de NH100 Route
 
@@ -18,12 +20,19 @@ De NH100 is een 100km offroad trainingsroute door:
 
 ## Zo beoordeelt de planner een winterdag
 
-Zie `isRouteRideable()` in `resources/js/nh100.js`. In volgorde:
+`App\Services\RoutePlannerService` is de enige plek met deze regels; de pagina en de agenda-feed tonen alleen het resultaat. In volgorde:
 
 1. **Groen** als er een laagwater (eb) valt tussen 08:00 en 15:00.
 2. **Rood** ("Te dicht op vloed") als het laatste hoogwater vóór 10:30 minder dan 2 uur eerder was.
 3. Anders telt de overlap tussen het strandvenster (10:30-12:00) en het eb-venster (4 uur voor tot 2 uur na laagwater): 90 minuten is **groen**, 30 tot 90 minuten **oranje**, minder **rood**.
 4. Zonder getijdendata voor die dag: **rood** ("Geen data beschikbaar").
+
+## Wat de pagina toont
+
+- **Vandaag** en **komend weekend** (za en zo) bovenaan, met de volgende groene weekenddag en de eerstvolgende groene dag.
+- Per dag: getijden met hoogte, **extra laag water** (laagwater op of onder -80 cm NAP, ongeveer de laagste 30% van de eb's overdag), zonsopkomst en de **wind om 11:00** voor de komende 16 dagen. Het strand rijd je van Wijk aan Zee naar Bergen aan Zee, dus wind uit het zuiden is rugwind en uit het noorden tegenwind.
+- Desktop: maandkalender met de weekenden gemarkeerd. Mobiel: doorlopende lijst met een schakelaar "Alleen weekend". Klik op een dag voor details.
+- **Agenda-abonnement** op `/agenda.ics` met de groene weekenddagen (`?dagen=alle` voor ook doordeweeks).
 
 ## Waarschuwing
 
@@ -48,7 +57,7 @@ php artisan tides:fetch 2028
 Details over bron en formaat: [TIDE_DATA_GUIDE.md](TIDE_DATA_GUIDE.md).
 
 ### Weer
-Actuele temperatuur, wind en zonsopgang voor Egmond aan Zee via [Open-Meteo](https://open-meteo.com) (geen API-key nodig), 15 minuten gecachet in `WindDataService`.
+Actuele temperatuur en wind plus de uurverwachting voor 16 dagen voor Egmond aan Zee via [Open-Meteo](https://open-meteo.com) (geen API-key nodig), 15 minuten gecachet in `WindDataService`. Zonsopkomst rekent PHP zelf uit (`date_sun_info`), dus die is er voor elke dag.
 
 ## Deploy
 Draait op hetzner-main onder `/var/www/html/mathijsoggel.nl/nh100` (Apache-alias `/nh100`, bestanden van `web-mathijsoggel`). Root heeft de GitHub-key, dus root pullt en de rest draait als de site-gebruiker:
@@ -61,9 +70,9 @@ rm -rf /tmp/nh100-build
 
 ## Todo
 - [x] Wind data (belangrijk voor strand)
-- [ ] Delen functionaliteit
+- [x] Delen (deelknop, preview-afbeelding voor WhatsApp e.d.)
+- [x] Agenda-abonnement
 - [ ] PWA (Progressive Web App) support
-- [ ] SEO functionaliteit
 - [ ] H100 variant toevoegen
  
 

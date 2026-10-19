@@ -8,6 +8,7 @@ test('the application returns a successful response', function () {
     $this->get('/')
         ->assertStatus(200)
         ->assertSee('NH100 Route Planner')
-        ->assertSee('2027-12-31T', false)
+        ->assertSee('"date":"2027-12-31"', false)
+        ->assertSee('og:image', false)
         ->assertDontSee('livewire', false);
 });

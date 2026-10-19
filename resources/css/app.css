@@ -45,3 +45,22 @@
     outline: 2px solid rgb(251 146 60);
     outline-offset: 2px;
 }
+/* Statuskleuren per dag; Alpine zet de klasse via `day-${status}` e.d. */
+@layer components {
+    .day-green { @apply bg-emerald-50 border-emerald-500 text-emerald-900; }
+    .day-amber { @apply bg-amber-50 border-amber-400 text-amber-900; }
+    .day-red { @apply bg-rose-50 border-rose-400 text-rose-900; }
+    .day-missing { @apply bg-stone-50 border-stone-200 text-stone-400; }
+
+    .dot-green { @apply bg-emerald-600; }
+    .dot-amber { @apply bg-amber-500; }
+    .dot-red { @apply bg-rose-600; }
+
+    .chip-green { @apply bg-emerald-100 text-emerald-800; }
+    .chip-amber { @apply bg-amber-100 text-amber-800; }
+    .chip-red { @apply bg-rose-100 text-rose-800; }
+
+    .text-status-green { @apply text-emerald-800; }
+    .text-status-amber { @apply text-amber-800; }
+    .text-status-red { @apply text-rose-800; }
+}

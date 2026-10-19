@@ -30,4 +30,4 @@ Datum;Nederlandse tijd;Hoogwater/laagwater;Waarde
 31/12/2027;13:38;LW;-81 cm
 ```
 
-`TideDataService` leest alle `YYYY.csv` in `public/data/`, slaat regels zonder `HW`/`LW` over en geeft per getij alleen `time` (UTC, ISO 8601) en `type` (`High`/`Low`) door aan de pagina. Herstarten of cache legen is niet nodig.
+`TideDataService` leest alle `YYYY.csv` in `public/data/`, slaat regels zonder `HW`/`LW` over en groepeert de getijden per datum. `RoutePlannerService` beoordeelt daarmee elke dag. Herstarten of cache legen is niet nodig.

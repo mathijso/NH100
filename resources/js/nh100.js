@@ -1,205 +1,211 @@
+// De beoordeling per dag gebeurt in PHP (RoutePlannerService); dit bestand toont alleen.
 
-// Datum helper functies
-export function formatDate(date) {
-    return date.toLocaleDateString('nl-NL', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-    });
+const MONTHS = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+const MONTHS_SHORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+const WEEKDAYS = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+const WEEKDAYS_SHORT = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
+
+const STATUS_LABEL = {
+    green: 'Berijdbaar',
+    amber: 'Misschien berijdbaar',
+    red: 'Niet geschikt',
+};
+
+// '2026-10-24' als lokale datum, zonder tijdzone-verschuiving
+export function parseDate(iso) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
 }
 
-export function formatDateShort(date) {
-    return date.toLocaleDateString('nl-NL', {
-        day: 'numeric',
-        month: 'short'
-    });
+export function ucfirst(text) {
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
 }
 
-export function formatTime(date) {
-    return date.toLocaleTimeString('nl-NL', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+export function formatLong(iso) {
+    const d = parseDate(iso);
+    return ucfirst(`${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`);
 }
 
-export function getDayName(date) {
-    return date.toLocaleDateString('nl-NL', { weekday: 'short' });
+export function formatShort(iso) {
+    const d = parseDate(iso);
+    return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
-export function getDayOfWeek(date) {
-    return date.getDay();
-}
-
-// Check of datum in winter seizoen is (1 okt - 1 mei)
-export function isWinterSeason(date) {
-    const month = date.getMonth() + 1;
-    return month >= 10 || month <= 4;
-}
-
-// Haal alle getijden voor een dag op
-export function getTidesForDay(date, tides) {
-    const dayTides = tides.filter(tide => {
-        const tideDate = new Date(tide.time);
-        return tideDate.toDateString() === date.toDateString();
-    });
-
-    const lowTides = dayTides.filter(t => t.type === 'Low')
-        .map(t => ({ ...t, time: new Date(t.time) }))
-        .sort((a, b) => a.time - b.time);
-
-    const highTides = dayTides.filter(t => t.type === 'High')
-        .map(t => ({ ...t, time: new Date(t.time) }))
-        .sort((a, b) => a.time - b.time);
-
-    return { lowTides, highTides };
-}
-
-// Bereken of de route berijdbaar is op een bepaalde datum
-export function isRouteRideable(date, tides) {
-    // Check 1: Winter seizoen check (1 okt - 1 mei is hele dag OK)
-    const winterSeason = isWinterSeason(date);
-    const { lowTides, highTides } = getTidesForDay(date, tides);
-
-    // Combineer en sorteer alle getijden chronologisch
-    const allTides = [
-        ...lowTides.map(t => ({ ...t, tideType: 'Eb' })),
-        ...highTides.map(t => ({ ...t, tideType: 'Vloed' }))
-    ].sort((a, b) => a.time - b.time);
-
-    if (!winterSeason) {
-        // Zomer: alleen voor 10:00 toegankelijk, maar we rijden 10:00-12:00
-        return {
-            rideable: false,
-            status: 'red',
-            reason: 'Strand voor 10:00 toegankelijk',
-            lowTides: lowTides,
-            highTides: highTides,
-            allTides: allTides
-        };
-    }
-
-    // Voorrangsregels gebruiker (aangescherpt):
-    // Regel 1) Groen als Eb valt tussen 08:00 en 15:00
-    const nine = new Date(date);
-    nine.setHours(8, 0, 0, 0);
-    const twelve = new Date(date);
-    twelve.setHours(15, 0, 0, 0);
-
-    const ebInMorningWindow = lowTides.find(t => t.time >= nine && t.time <= twelve);
-    if (ebInMorningWindow) {
-        return {
-            rideable: true,
-            status: 'green',
-            reason: `Eb om ${formatTime(ebInMorningWindow.time)} (tussen 08:00–15:00)`,
-            lowTides: lowTides,
-            highTides: highTides,
-            allTides: allTides
-        };
-    }
-
-    // Regel 2) Aangescherpt: beoordeel nabijheid van laatste vloed vóór 10:30
-    const windowStart = new Date(date);
-    windowStart.setHours(10, 30, 0, 0);
-    const highsBeforeWindow = highTides.filter(t => t.time <= windowStart).sort((a, b) => a.time - b.time);
-    const lastHighBeforeWindow = highsBeforeWindow.length > 0 ? highsBeforeWindow[highsBeforeWindow.length - 1] : null;
-    if (lastHighBeforeWindow) {
-        const hoursSinceHigh = (windowStart - lastHighBeforeWindow.time) / (1000 * 60 * 60);
-        if (hoursSinceHigh < 2) {
-            return {
-                rideable: false,
-                status: 'red',
-                reason: `Te dicht op vloed`,
-                lowTides: lowTides,
-                highTides: highTides,
-                allTides: allTides
-            };
-        }
-
-    }
-
-    // Check 3 (fallback): Getijden-overlap met venster (10:00-12:00)
-    const windowEnd = new Date(date);
-    windowEnd.setHours(12, 0, 0, 0);
-
-    // Bepaal overlap met eb-venster (4 uur voor / 2 uur na eb)
-    let bestOverlapMinutes = 0;
-    let bestLowTide = null;
-
-    for (let lowTide of lowTides) {
-        const ebStart = new Date(lowTide.time);
-        ebStart.setHours(ebStart.getHours() - 4);
-        const ebEnd = new Date(lowTide.time);
-        ebEnd.setHours(ebEnd.getHours() + 2);
-
-        const overlapStart = new Date(Math.max(windowStart, ebStart));
-        const overlapEnd = new Date(Math.min(windowEnd, ebEnd));
-        const overlapMinutes = Math.max(0, (overlapEnd - overlapStart) / (1000 * 60));
-
-        if (overlapMinutes > bestOverlapMinutes) {
-            bestOverlapMinutes = overlapMinutes;
-            bestLowTide = lowTide;
-        }
-    }
-
-    // Bepaal status op basis van overlap (fallback regels)
-    // - groen: volledige 90 minuten overlap (heel rijvenster gedekt)
-    // - amber: tenminste 30 minuten maar minder dan 90 minuten
-    // - rood: minder dan 30 minuten of geen data
-    if (bestOverlapMinutes >= 90) {
-        return {
-            rideable: true,
-            status: 'green',
-            reason: `Het is eb genoeg`,
-            lowTides: lowTides,
-            highTides: highTides,
-            allTides: allTides
-        };
-    }
-
-    if (bestOverlapMinutes >= 30) {
-        return {
-            rideable: false,
-            status: 'amber',
-            reason: `Het kan misschien`,
-            lowTides: lowTides,
-            highTides: highTides,
-            allTides: allTides
-        };
-    }
-
-    if (lowTides.length > 0) {
-        return {
-            rideable: false,
-            status: 'red',
-            reason: `Het is te vloed`,
-            lowTides: lowTides,
-            highTides: highTides,
-            allTides: allTides
-        };
-    }
+export function planner({ days, today, weather }) {
+    const byDate = Object.fromEntries(days.map(day => [day.date, day]));
+    const todayDate = parseDate(today);
 
     return {
-        rideable: false,
-        status: 'red',
-        reason: 'Geen data beschikbaar',
-        lowTides: [],
-        highTides: [],
-        allTides: []
+        days,
+        today,
+        weather,
+        byDate,
+        month: { year: todayDate.getFullYear(), month: todayDate.getMonth() },
+        weekendOnly: readSetting('weekendOnly') === '1',
+        listSize: 14,
+        selected: null,
+        shareLabel: 'Deel planner',
+
+        init() {
+            const day = this.todayDay;
+            if (day) {
+                document.title = `NH100 Route Planner - ${{
+                    green: 'Route berijdbaar vandaag',
+                    amber: 'Route mogelijk berijdbaar',
+                    red: 'Route niet geschikt vandaag',
+                }[day.status]}`;
+            }
+        },
+
+        get todayDay() {
+            return byDate[today] ?? null;
+        },
+
+        get upcoming() {
+            return days.filter(day => day.date >= today);
+        },
+
+        // De eerstvolgende zaterdag en zondag (vandaag meegerekend)
+        get weekend() {
+            return this.upcoming.filter(day => day.weekend).slice(0, 2);
+        },
+
+        // Eerste groene weekenddag ná de twee getoonde
+        get nextGreenWeekendDay() {
+            const shown = this.weekend.map(day => day.date);
+            return this.upcoming.find(day => day.weekend && day.status === 'green' && !shown.includes(day.date)) ?? null;
+        },
+
+        get nextGreenDay() {
+            return this.upcoming.find(day => day.status === 'green') ?? null;
+        },
+
+        get monthLabel() {
+            return `${MONTHS[this.month.month]} ${this.month.year}`;
+        },
+
+        // Lege vakjes vóór de 1e, maandag = 0
+        get monthOffset() {
+            const first = new Date(this.month.year, this.month.month, 1).getDay();
+            return first === 0 ? 6 : first - 1;
+        },
+
+        get monthDays() {
+            const count = new Date(this.month.year, this.month.month + 1, 0).getDate();
+            const prefix = `${this.month.year}-${String(this.month.month + 1).padStart(2, '0')}`;
+
+            return Array.from({ length: count }, (_, i) => {
+                const date = `${prefix}-${String(i + 1).padStart(2, '0')}`;
+                return byDate[date] ?? { date, missing: true, weekend: [0, 6].includes(parseDate(date).getDay()) };
+            });
+        },
+
+        get canGoBack() {
+            return days.length > 0 && this.monthKey(-1) >= days[0].date.slice(0, 7);
+        },
+
+        get canGoForward() {
+            return days.length > 0 && this.monthKey(1) <= days[days.length - 1].date.slice(0, 7);
+        },
+
+        get listDays() {
+            const list = this.weekendOnly ? this.upcoming.filter(day => day.weekend) : this.upcoming;
+            return list.slice(0, this.listSize);
+        },
+
+        get hasMore() {
+            const list = this.weekendOnly ? this.upcoming.filter(day => day.weekend) : this.upcoming;
+            return list.length > this.listSize;
+        },
+
+        monthKey(delta) {
+            const d = new Date(this.month.year, this.month.month + delta, 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        },
+
+        moveMonth(delta) {
+            if ((delta < 0 && !this.canGoBack) || (delta > 0 && !this.canGoForward)) return;
+            const d = new Date(this.month.year, this.month.month + delta, 1);
+            this.month = { year: d.getFullYear(), month: d.getMonth() };
+        },
+
+        toggleWeekendOnly() {
+            this.weekendOnly = !this.weekendOnly;
+            this.listSize = 14;
+            writeSetting('weekendOnly', this.weekendOnly ? '1' : '0');
+        },
+
+        open(day) {
+            if (!day || day.missing) return;
+            this.selected = day;
+            this.$nextTick(() => this.$refs.closeDetail?.focus());
+        },
+
+        close() {
+            this.selected = null;
+        },
+
+        async share() {
+            const data = {
+                title: 'NH100 Route Planner',
+                text: 'Wanneer is de NH100 berijdbaar? Getij, seizoen en wind per dag.',
+                url: window.location.href.split('#')[0],
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(data);
+                    return;
+                }
+                await navigator.clipboard.writeText(data.url);
+                this.shareLabel = 'Link gekopieerd';
+            } catch (e) {
+                if (e?.name === 'AbortError') return;
+                this.shareLabel = 'Kopiëren lukte niet';
+            }
+            setTimeout(() => (this.shareLabel = 'Deel planner'), 2500);
+        },
+
+        isToday(day) {
+            return day.date === today;
+        },
+
+        isPast(day) {
+            return day.date < today;
+        },
+
+        statusLabel(day) {
+            return STATUS_LABEL[day?.status] ?? '';
+        },
+
+        lowTides(day) {
+            return day.tides.filter(tide => tide.type === 'Eb');
+        },
+
+        windText(wind) {
+            if (!wind) return '';
+            return `${wind.direction} ${wind.beaufort} Bft${wind.effect ? `, ${wind.effect}` : ''}`;
+        },
+
+        formatLong,
+        formatShort,
+        ucfirst,
+        dayNumber: iso => parseDate(iso).getDate(),
     };
 }
 
-// Export alle functies als window object voor gebruik in Alpine components
-if (typeof window !== 'undefined') {
-    window.NH100 = {
-        formatDate,
-        formatDateShort,
-        formatTime,
-        getDayName,
-        getDayOfWeek,
-        isWinterSeason,
-        getTidesForDay,
-        isRouteRideable
-    };
+function readSetting(key) {
+    try {
+        return localStorage.getItem(`nh100.${key}`);
+    } catch {
+        return null;
+    }
 }
 
+function writeSetting(key, value) {
+    try {
+        localStorage.setItem(`nh100.${key}`, value);
+    } catch {
+        // privévenster of geblokkeerde opslag: dan onthouden we het niet
+    }
+}
