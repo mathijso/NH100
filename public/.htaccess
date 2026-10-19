@@ -18,10 +18,15 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Basispad bepalen, zodat het ook onder een Apache-alias (/nh100) werkt.
+    # Zonder dit gaf elke onbekende URL een redirect-loop (500) i.p.v. 404.
+    RewriteCond %{REQUEST_URI}::$0 ^(/.+)/(.*)::\2$
+    RewriteRule .* - [E=BASE:%1]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ %{ENV:BASE}/index.php [L]
 </IfModule>
 
 # Compressie: de pagina bevat alle getijden inline
