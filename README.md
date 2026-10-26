@@ -60,13 +60,16 @@ Details over bron en formaat: [TIDE_DATA_GUIDE.md](TIDE_DATA_GUIDE.md).
 Actuele temperatuur en wind plus de uurverwachting voor 16 dagen voor Egmond aan Zee via [Open-Meteo](https://open-meteo.com) (geen API-key nodig), 15 minuten gecachet in `WindDataService`. Zonsopkomst rekent PHP zelf uit (`date_sun_info`), dus die is er voor elke dag.
 
 ## Deploy
-Draait op hetzner-main onder `/var/www/html/mathijsoggel.nl/nh100` (Apache-alias `/nh100`, bestanden van `web-mathijsoggel`). Root heeft de GitHub-key, dus root pullt en de rest draait als de site-gebruiker:
+Een gewone Laravel-app zonder database. Op de server, in de map van de app en als de gebruiker die de bestanden bezit:
 
 ```bash
-cd /var/www/html/mathijsoggel.nl/nh100 && git pull --ff-only && chown -R web-mathijsoggel:web-mathijsoggel .
-sudo -u web-mathijsoggel -H bash -c 'export HOME=/tmp/nh100-build; mkdir -p $HOME; cd /var/www/html/mathijsoggel.nl/nh100 && /usr/local/bin/composer install --no-dev -o && npm ci && npm run build && php artisan optimize'
-rm -rf /tmp/nh100-build
+git pull --ff-only
+composer install --no-dev -o
+npm ci && npm run build
+php artisan optimize
 ```
+
+De app draait onder het subpad `/nh100`; zet `APP_URL` daarop en laat de webserver dat pad naar `public/` wijzen.
 
 ## Todo
 - [x] Wind data (belangrijk voor strand)
