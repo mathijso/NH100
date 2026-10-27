@@ -24,6 +24,7 @@
         window.NH100_DATA = @json(['days' => $days, 'today' => $today, 'weather' => $currentWeather]);
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.bezoek')
 </head>
 
 <body class="bg-neutral-50 min-h-screen" x-data="planner(window.NH100_DATA)" @keydown.escape.window="close()">
