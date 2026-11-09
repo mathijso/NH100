@@ -1,0 +1,4 @@
+# Dependabot: wekelijks, patch en minor gegroepeerd per ecosysteem; majors los (een major is een besluit).
+# Tests draai je lokaal vóór merge; nooit composer update op een server.
+version: 2
+updates:
